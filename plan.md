@@ -13,7 +13,7 @@ The default language of the platform is **Brazilian Portuguese**. English is the
 - Remove all boilerplate content (default page content, sample styles, icons).
 
 ### 1.2 Install dependencies
-- `@vercel/postgres` — database queries
+- `@neondatabase/serverless` — database queries (HTTP mode for single queries, WebSocket `Pool` for transactions)
 - `@vercel/blob` — file storage
 - `node-pg-migrate` — database migrations
 - `jose` — JWT signing and verification (Edge Runtime compatible — required because Next.js middleware runs on Edge, where `jsonwebtoken` does not work)
@@ -77,15 +77,16 @@ Place empty placeholder files where needed so the structure exists from the star
 ### 1.5 Environment variables
 - Create a `.env.local` file with placeholders for all required variables:
   - `DATABASE_URL`
+  - `DATABASE_URL_UNPOOLED`
   - `BLOB_READ_WRITE_TOKEN`
   - `RESEND_API_KEY`
-  - `GEMINI_API_KEY`
+  - `GOOGLE_GENERATIVE_AI_API_KEY`
   - `JWT_SECRET`
 - Add `.env.local` to `.gitignore` (Next.js does this by default).
 
 ### 1.6 Vercel project
 - Create a new Vercel project linked to the Git repository.
-- Provision Vercel Postgres (Neon) from the Vercel dashboard — this gives you the `DATABASE_URL`.
+- Install the Neon integration from the Vercel Marketplace — this gives you `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
 - Provision Vercel Blob — this gives you the `BLOB_READ_WRITE_TOKEN`.
 - Add all environment variables to the Vercel project settings.
 
@@ -126,10 +127,10 @@ Add appropriate indexes:
 - Any other foreign key columns that will be queried frequently.
 
 ### 2.4 Database connection module
-- Write `src/lib/db/connection.ts` — export the `sql` tagged template from `@vercel/postgres` for use in query files.
+- Write `src/lib/db/connection.ts` — export a `sql` query function using `neon()` from `@neondatabase/serverless` for use in query files.
 
 ### 2.5 Run all migrations
-- Run the migrations against the Vercel Postgres database to confirm everything works.
+- Run the migrations against the Neon Postgres database to confirm everything works.
 
 ---
 

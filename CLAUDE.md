@@ -12,8 +12,8 @@ Ditchy is an AI-powered exam preparation platform for university students. Users
 
 - **Framework**: Next.js (App Router, API Routes)
 - **Frontend**: React + Tailwind CSS (dark mode only, Geist font)
-- **Database**: Vercel Postgres (Neon) + pgvector for embeddings
-- **Database access**: Raw SQL via `@vercel/postgres` (no ORM)
+- **Database**: Neon Postgres + pgvector for embeddings
+- **Database access**: Raw SQL via `@neondatabase/serverless` (no ORM)
 - **Migrations**: `node-pg-migrate`
 - **File storage**: Vercel Blob (signed URLs for direct upload)
 - **Auth**: JWT in HTTP-only cookies, OTP via Resend
@@ -88,4 +88,4 @@ db/
 
 ## Environment Variables
 
-`DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, `GEMINI_API_KEY`, `JWT_SECRET`
+`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `JWT_SECRET`

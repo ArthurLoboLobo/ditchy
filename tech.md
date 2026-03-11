@@ -7,17 +7,17 @@
 | Framework      | Next.js (full-stack)          |
 | Frontend       | React (via Next.js)           |
 | Backend        | Next.js API Routes            |
-| Database       | Vercel Postgres (Neon)        |
+| Database       | Neon Postgres                 |
 | File Storage   | Vercel Blob                   |
 | Hosting        | Vercel                        |
 | Email Service  | Resend                        |
-| DB Queries     | Raw SQL via `@vercel/postgres` |
+| DB Queries     | Raw SQL via `@neondatabase/serverless` |
 | Migrations     | `node-pg-migrate`              |
 | Styling        | Tailwind CSS                   |
 
 ## Database Access
 
-- **No ORM**. All database queries are written as raw SQL using `@vercel/postgres`'s `sql` tagged template, which handles parameterized queries (SQL injection prevention) and connection pooling.
+- **No ORM**. All database queries are written as raw SQL using `@neondatabase/serverless`'s `neon()` SQL tagged template, which handles parameterized queries (SQL injection prevention). Uses HTTP mode for single queries (faster in serverless) and WebSocket `Pool` for transactions.
 - **Migrations** are managed with `node-pg-migrate`. Each migration is a plain SQL file stored in a migrations folder. The tool tracks which migrations have been applied via a tracking table in the database.
 
 ## Folder Structure
@@ -45,7 +45,7 @@ src/
     ...                         # Feature-specific: SectionCard, TopicCard, ChatMessage, PlanEditor, Navbar, Breadcrumb...
   lib/
     db/
-      connection.ts             # Vercel Postgres connection
+      connection.ts             # Neon Postgres connection
       queries/                  # SQL query functions grouped by entity (sections.ts, files.ts, messages.ts, etc.)
     auth.ts                     # JWT signing/verification, cookie helpers
     ai.ts                       # LLM call wrappers (chat, extraction, plan generation, embedding)
@@ -70,11 +70,12 @@ db/
 
 | Variable                 | Description                        |
 | ------------------------ | ---------------------------------- |
-| `DATABASE_URL`           | Vercel Postgres connection string  |
-| `BLOB_READ_WRITE_TOKEN`  | Vercel Blob access token           |
-| `RESEND_API_KEY`         | Resend email service API key       |
-| `GEMINI_API_KEY`         | Google Gemini API key              |
-| `JWT_SECRET`             | Secret for signing JWTs            |
+| `DATABASE_URL`                  | Neon Postgres pooled connection string   |
+| `DATABASE_URL_UNPOOLED`         | Neon Postgres direct connection (for migrations) |
+| `BLOB_READ_WRITE_TOKEN`        | Vercel Blob access token                 |
+| `RESEND_API_KEY`                | Resend email service API key             |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini API key (default for `@ai-sdk/google`) |
+| `JWT_SECRET`                    | Secret for signing JWTs                  |
 
 ## Authentication
 
@@ -189,7 +190,7 @@ All prompts are hardcoded in the codebase. When a prompt is needed, it is import
 ### RAG (Retrieval-Augmented Generation)
 
 - Extracted text from uploaded files is split into **~1000 token chunks with ~100 token overlap**.
-- Chunks are embedded using `gemini-embedding-001` and stored in **pgvector** (via the pgvector extension on Vercel Postgres).
+- Chunks are embedded using `gemini-embedding-001` and stored in **pgvector** (via the pgvector extension on Neon Postgres).
 - Chunks are stored alongside metadata (section ID, source file name, chunk index) for filtering.
 
 ### Topic Chat
