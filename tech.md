@@ -382,7 +382,7 @@ All tables use UUID primary keys and `created_at` timestamps. Messages use seria
 | `file_id`     | UUID (FK)    | References `files.id`              |
 | `chunk_index` | INTEGER      | Order of chunk within the file     |
 | `chunk_text`  | TEXT         | The text content of this chunk     |
-| `embedding`   | VECTOR(3072) | pgvector column (`gemini-embedding-001` output dimension) |
+| `embedding`   | VECTOR(1536) | pgvector column (`gemini-embedding-001` with `outputDimensionality=1536`) |
 | `created_at`  | TIMESTAMP    |                                    |
 
 ## API Routes

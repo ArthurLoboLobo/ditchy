@@ -116,7 +116,7 @@ Write migration files that create the tables in dependency order:
 9. **`chats`** — `id` (UUID PK), `section_id` (UUID FK → sections, ON DELETE CASCADE), `topic_id` (UUID FK → topics, ON DELETE CASCADE, nullable), `type` (TEXT), `created_at` (TIMESTAMP).
 10. **`messages`** — `id` (SERIAL PK), `chat_id` (UUID FK → chats, ON DELETE CASCADE), `role` (TEXT), `content` (TEXT), `created_at` (TIMESTAMP).
 11. **`chat_summaries`** — `id` (UUID PK), `chat_id` (UUID FK → chats, ON DELETE CASCADE), `summary_text` (TEXT), `summarized_up_to_message_id` (INTEGER, references messages.id), `created_at` (TIMESTAMP).
-12. **`embeddings`** — `id` (UUID PK), `section_id` (UUID FK → sections, ON DELETE CASCADE), `file_id` (UUID FK → files, ON DELETE CASCADE), `chunk_index` (INTEGER), `chunk_text` (TEXT), `embedding` (VECTOR(3072)), `created_at` (TIMESTAMP).
+12. **`embeddings`** — `id` (UUID PK), `section_id` (UUID FK → sections, ON DELETE CASCADE), `file_id` (UUID FK → files, ON DELETE CASCADE), `chunk_index` (INTEGER), `chunk_text` (TEXT), `embedding` (VECTOR(1536)), `created_at` (TIMESTAMP).
 
 Add appropriate indexes:
 - `embeddings.embedding` — IVFFlat or HNSW index for vector similarity search.
@@ -527,7 +527,7 @@ Add:
 
 #### Chunking and embedding (`src/lib/ai.ts` — additions)
 - `chunkText(text, chunkSize, overlap): string[]` — splits text into chunks of ~1000 tokens with ~100 token overlap.
-- `embedText(text): number[]` — calls Gemini embedding API (`gemini-embedding-001`) and returns the 3072-dimension vector.
+- `embedText(text): number[]` — calls Gemini embedding API (`gemini-embedding-001`) with `outputDimensionality: 1536` and returns the vector.
 - `embedChunks(chunks): number[][]` — embeds multiple chunks (can batch API calls for efficiency).
 
 #### Database queries (`src/lib/db/queries/embeddings.ts`)

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate": "node --env-file=.env.local node_modules/.bin/node-pg-migrate --database-url-var DATABASE_URL_UNPOOLED --migrations-dir db/migrations up",
+    "migrate:create": "node --env-file=.env.local node_modules/.bin/node-pg-migrate --migrations-dir db/migrations create"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",

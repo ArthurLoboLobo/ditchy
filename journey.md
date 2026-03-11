@@ -23,13 +23,20 @@ Progress tracker and implementation notes. Updated after each phase.
 ---
 
 ## Phase 2 — Database
-- [ ] 2.1 Set up node-pg-migrate
-- [ ] 2.2 Enable pgvector
-- [ ] 2.3 Create all tables
-- [ ] 2.4 Database connection module
-- [ ] 2.5 Run all migrations
+- [x] 2.1 Set up node-pg-migrate
+- [x] 2.2 Enable pgvector
+- [x] 2.3 Create all tables
+- [x] 2.4 Database connection module
+- [x] 2.5 Run all migrations
 
 **Notes:**
+- Added `migrate` and `migrate:create` scripts to `package.json`. Uses `--database-url-var DATABASE_URL_UNPOOLED` so migrations run over a direct (non-pooled) connection — required for DDL statements.
+- node-pg-migrate v8 auto-loads `.env.local` via dotenv, so no extra setup needed.
+- 6 migration files in `db/migrations/`: pgvector extension, users+auth, sections+files, plan tables, study tables (topics/subtopics/chats/messages/summaries), embeddings.
+- `messages` table uses `SERIAL` PK (not UUID) for guaranteed ordering.
+- `order` columns are quoted (`"order"`) since it is a reserved SQL keyword.
+- Embeddings table uses an HNSW index (`vector_cosine_ops`) for approximate nearest-neighbor search.
+- `src/lib/db/connection.ts` exports `sql` using `neon()` HTTP mode for single queries. WebSocket `Pool` will be used for transactions when needed (imported directly from `@neondatabase/serverless` at the call site).
 
 ---
 
