@@ -20,6 +20,11 @@ const EMAIL_CONTENT: Record<Language, { subject: string; body: (code: string) =>
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.RESEND_FROM_EMAIL) {
+      console.error('RESEND_FROM_EMAIL is not set');
+      return NextResponse.json({ error: 'CONFIG_ERROR' }, { status: 500 });
+    }
+
     const body = await request.json().catch(() => null);
     const email = body?.email?.trim();
     const language: Language = body?.language === 'en' ? 'en' : 'pt-BR';
@@ -50,7 +55,7 @@ export async function POST(request: Request) {
 
     const { subject, body: bodyFn } = EMAIL_CONTENT[language];
     const { error: sendError } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
+      from: process.env.RESEND_FROM_EMAIL,
       to: email,
       subject,
       text: bodyFn(code),
