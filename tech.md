@@ -101,11 +101,11 @@ db/
 - Files are stored in **Vercel Blob**.
 - **100 MB limit per section** (total across all files in a section).
 - **Upload flow** (direct-to-Blob with server-side validation):
-  1. Client requests a signed upload URL: `POST /api/files/upload-url`
+  1. Client requests a signed upload URL: `POST /api/files/presign`
   2. Server validates: user is authenticated, section belongs to them, section is in "Uploading" status, file type is allowed, adding this file wouldn't exceed the 100 MB section limit.
   3. If valid, the server generates a **signed upload URL** from Vercel Blob (short expiry, ~5 minutes) and returns it.
   4. Client uploads directly to Blob using the signed URL (no file data passes through the serverless function).
-  5. Client confirms the upload: `POST /api/files/confirm` — server creates the file row in the database and triggers text extraction processing.
+  5. Client creates the file record: `POST /api/files` — server creates the file row in the database. Client then immediately calls `POST /api/files/:id/process` to trigger text extraction.
 
 ### Processing (Text Extraction)
 - Every uploaded file is first **converted to images** before being sent to Gemini:
@@ -124,10 +124,10 @@ db/
 
 ## Background Jobs
 
-- Study plan generation and file processing run as **self-chaining serverless functions**.
+- Study plan generation runs as a **self-chaining serverless function**.
 - Each step is a separate API call that fits within Vercel's 60s function limit.
 - **Chaining mechanism**: At the end of each step, the function fires a non-awaited `fetch()` call to its own API to trigger the next step, then returns. Vercel spins up a new function invocation for the next step. This means jobs complete even if the user closes the browser.
-- **File processing**: The first step is triggered by `POST /api/files/confirm`. Each step processes one file, then self-calls to process the next. Stops when all files are processed.
+- **File processing**: Triggered by the client calling `POST /api/files/:id/process` immediately after `POST /api/files`. Processes one file per call. The client calls it once per file; multiple concurrent calls for different files are fine.
 - **Plan generation**: The first step is triggered by `POST /api/sections/:id/start-planning`. Each step processes one batch (current plan + next batch → updated plan), then self-calls for the next batch. Stops after the last batch.
 - The client polls for status updates (no WebSockets/SSE).
 - This approach avoids the need for external queue services (QStash, Inngest, etc.) and works on Vercel's free tier.
@@ -408,8 +408,9 @@ All routes are REST. Protected routes require a valid JWT in the HTTP-only cooki
 | Method | Route                              | Description                                          |
 | ------ | ---------------------------------- | ---------------------------------------------------- |
 | GET    | `/api/sections/:id/files`          | List files in a section                              |
-| POST   | `/api/files/upload-url`            | Get a signed Vercel Blob upload URL (with validation)|
-| POST   | `/api/files/confirm`               | Confirm upload, create DB row, trigger processing    |
+| POST   | `/api/files/presign`               | Get a signed Vercel Blob upload URL (with validation)|
+| POST   | `/api/files`                       | Create file record in DB after Blob upload           |
+| POST   | `/api/files/:id/process`           | Trigger text extraction for a single file            |
 | DELETE | `/api/files/:id`                   | Remove file from section and Blob                    |
 | GET    | `/api/files/:id/preview`           | Get file URL for preview modal                       |
 

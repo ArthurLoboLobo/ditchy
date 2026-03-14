@@ -314,7 +314,6 @@ Build the reusable components that will be used across the app. Each component f
 - `deleteFile(fileId)` — deletes the file row.
 - `getFile(fileId)` — returns a single file.
 - `getTotalSizeForSection(sectionId)` — returns the sum of `size_bytes` for all files in the section.
-- `getNextUnprocessedFile(sectionId)` — returns the next file with status `uploading` or `processing` (for the background job chain).
 
 ### 6.2 API routes
 
@@ -322,7 +321,7 @@ Build the reusable components that will be used across the app. Each component f
 - Validates section ownership.
 - Returns all files in the section.
 
-#### `POST /api/files/upload-url`
+#### `POST /api/files/presign`
 - Receives `{ sectionId, fileName, fileType, fileSize }`.
 - Validates:
   - User is authenticated and owns the section.
@@ -332,17 +331,16 @@ Build the reusable components that will be used across the app. Each component f
 - Generates a signed upload URL from Vercel Blob (short expiry, ~5 minutes).
 - Returns the signed URL and a temporary token/identifier for the confirm step.
 
-#### `POST /api/files/confirm`
+#### `POST /api/files`
 - Receives `{ sectionId, blobUrl, originalName, fileType, sizeBytes }`.
 - Validates section ownership and status.
 - Creates the file row in the database with status `uploading`.
-- Triggers the file processing background job: makes a non-awaited `fetch()` call to `POST /api/files/process` with the file ID.
-- Returns the created file.
+- Returns the created file (no call to `process` — the client is responsible for calling it).
 
-#### `POST /api/files/process` (internal — background job)
-- Receives `{ fileId }`.
-- This is an internal endpoint. Before processing, verify the file exists and its status is `uploading`, `processing`, or `error` (to allow retries) to prevent external abuse.
-- This is a self-chaining background job:
+#### `POST /api/files/:id/process`
+- File ID is taken from the URL path parameter.
+- Before processing, verify the file exists and belongs to the authenticated user, and that its status is `uploading`, `processing`, or `error` (to allow retries).
+- Processes exactly one file and returns — no self-chaining:
   1. Get the file from the database.
   2. Update status to `processing`.
   3. Download the file content from Vercel Blob.
@@ -353,9 +351,8 @@ Build the reusable components that will be used across the app. Each component f
      - **TXT**: Wrap the text content into a simple layout and render to an image, or send as plain text directly to Gemini (no conversion needed for plain text).
   5. Send the images to Gemini for AI text extraction (see 6.3). Each image is sent as part of a multimodal prompt. If there are too many images for a single API call, split into batches and concatenate results.
   6. Save the extracted text to the file row and set status to `processed`. If extraction fails, set status to `error`.
-  7. Check if there are more unprocessed files in the same section (`getNextUnprocessedFile`).
-  8. If yes, make a non-awaited `fetch()` to this same endpoint with the next file's ID, then return.
-  9. If no, return (all files processed).
+- The client calls this endpoint once per file immediately after `confirm`. Multiple concurrent calls for different files are fine.
+- For retries: the UI shows a "Retry" button for files with `error` status, which calls this endpoint again with the file ID.
 
 #### `DELETE /api/files/:id`
 - Validates that the file belongs to a section owned by the user.
@@ -395,13 +392,14 @@ Create the config file with the initial parameters needed for this phase:
 - `extractTextFromPlainText(text: string): string` — sends plain text to Gemini for structured extraction (LaTeX conversion, formatting). Simpler than the image path.
 
 ### 6.7 Uploading UI (`src/app/(main)/sections/[id]/` — Uploading component)
+- **Upload flow (per file)**: `POST /api/files/presign` → upload to Blob → `POST /api/files` → immediately call `POST /api/files/:id/process`. Multiple files upload and process concurrently.
 - **File upload zone**: Dashed border area. Clicking it opens the system file picker. Also supports drag-and-drop.
 - **File list**: Below the upload zone, shows all uploaded files with:
   - File name.
   - Status label: `Enviando` → `Processando` → `Processado`. If extraction fails: `Erro`.
   - Click on the file name to preview (opens a modal showing the original file — PDF rendered in an iframe, images displayed directly).
   - Remove button (X icon) to delete the file.
-  - If a file has `error` status, show a "Tentar novamente" (Retry) button that re-triggers processing by calling `POST /api/files/process` with the file ID.
+  - If a file has `error` status, show a "Tentar novamente" (Retry) button that re-triggers processing by calling `POST /api/files/:id/process`.
 - **Polling**: Use `setInterval` to poll `GET /api/sections/:id/files/status` every few seconds to update file statuses.
 - **"Iniciar Planejamento" (Start Planning) button**: Only enabled when all uploaded files have status `processed` (no files with `uploading`, `processing`, or `error` status) and there is at least one file. Clicking it calls `POST /api/sections/:id/start-planning` (Phase 7) and transitions the section.
 
@@ -543,7 +541,7 @@ Add:
 #### Embedding pipeline
 - After file processing is complete (Phase 6), add a step that chunks the extracted text and creates embeddings.
 - This should happen during the file processing background job: after extracting text, chunk it, embed the chunks, and store them.
-- Update the file processing flow in `POST /api/files/process` to include this step.
+- Update the file processing flow in `POST /api/files/:id/process` to include this step.
 
 ### 8.2 AI config additions (`src/config/ai.ts`)
 Add all remaining parameters:
