@@ -52,15 +52,22 @@ export async function createSection(
   return rows[0] as Section;
 }
 
-export async function getSection(sectionId: string, userId: string): Promise<Section | null> {
+export async function verifySectionOwnership(sectionId: string, userId: string): Promise<boolean> {
   const rows = await sql`
-    SELECT * FROM sections WHERE id = ${sectionId} AND user_id = ${userId} LIMIT 1
+    SELECT 1 FROM sections WHERE id = ${sectionId} AND user_id = ${userId} LIMIT 1
+  `;
+  return rows.length > 0;
+}
+
+export async function getSection(sectionId: string): Promise<Section | null> {
+  const rows = await sql`
+    SELECT * FROM sections WHERE id = ${sectionId} LIMIT 1
   `;
   return (rows[0] as Section) ?? null;
 }
 
-export async function deleteSection(sectionId: string, userId: string): Promise<void> {
+export async function deleteSection(sectionId: string): Promise<void> {
   await sql`
-    DELETE FROM sections WHERE id = ${sectionId} AND user_id = ${userId}
+    DELETE FROM sections WHERE id = ${sectionId}
   `;
 }

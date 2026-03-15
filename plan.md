@@ -6,6 +6,26 @@ The default language of the platform is **Brazilian Portuguese**. English is the
 
 ---
 
+## Ownership Verification Pattern
+
+Database query functions do **not** embed ownership checks. Instead, each entity has a dedicated ownership verification query, and API routes call it explicitly before proceeding with the actual operation.
+
+- **`verifySectionOwnership(sectionId, userId)`** — returns `true` if the section belongs to the user. Lives in `sections.ts`.
+- **`verifyFileOwnership(fileId, userId)`** — joins `files → sections` to check the user owns the file's section. Lives in `files.ts`.
+- **`verifyTopicOwnership(topicId, userId)`** — joins `topics → sections` to check the user owns the topic's section. Lives in `topics.ts`.
+- **`verifyChatOwnership(chatId, userId)`** — joins `chats → sections` to check the user owns the chat's section. Lives in `chats.ts`.
+
+Each entity has its own ownership query that internally resolves the ownership chain. API routes call a single function without needing to know the parent hierarchy.
+
+**API route pattern:**
+1. Authenticate (extract `userId` from JWT).
+2. Call the relevant ownership check (e.g., `verifySectionOwnership`). Return 404 if it fails.
+3. Call the data query (e.g., `getSection(sectionId)` — no `userId` parameter).
+
+This keeps queries single-purpose, reusable in internal contexts (e.g., background jobs), and makes the ownership boundary explicit at the route level.
+
+---
+
 ## Phase 1 — Project Setup
 
 ### 1.1 Initialize the Next.js project
@@ -19,7 +39,6 @@ The default language of the platform is **Brazilian Portuguese**. English is the
 - `jose` — JWT signing and verification (lightweight, no native dependencies, works in all Next.js runtimes)
 - `resend` — email sending
 - `ai` and `@ai-sdk/google` — Vercel AI SDK for streaming, tool calling, and embeddings (covers all Gemini interactions — no need for `@google/genai` separately)
-- File conversion libraries for text extraction (e.g., `pdf-img-convert` or `pdfjs-dist` for PDF-to-image, and a DOCX/PPTX conversion solution — see Phase 6.5 note on Vercel constraints)
 - Any other utility packages needed (e.g., `uuid` if not using `crypto.randomUUID()`)
 
 ### 1.3 Configure Tailwind CSS
@@ -252,11 +271,17 @@ Build the reusable components that will be used across the app. Each component f
 
 ## Phase 5 — Dashboard & Sections
 
-### 5.1 Database queries (`src/lib/db/queries/sections.ts`)
+### 5.1 Database queries
+
+#### `src/lib/db/queries/sections.ts`
+- `verifySectionOwnership(sectionId, userId)` — returns `true` if the section belongs to the user. Used by all API routes that operate on a specific section.
 - `listSections(userId)` — returns all sections for a user, ordered by `created_at` descending. Include a count of completed topics and total topics for each section (for the progress indicator).
 - `createSection(userId, name, description)` — inserts a new section. Before inserting, count existing sections for the user and reject if already at 10.
-- `getSection(sectionId, userId)` — returns a single section, only if it belongs to the user.
-- `deleteSection(sectionId, userId)` — deletes the section (cascade handles related data). Must also delete associated files from Vercel Blob.
+- `getSection(sectionId)` — returns a single section by ID.
+- `deleteSection(sectionId)` — deletes the section (cascade handles related data).
+
+#### `src/lib/db/queries/files.ts`
+- `listFileBlobUrls(sectionId)` — returns an array of `blob_url` strings for all files in the section. Used by `DELETE /api/sections/:id` to clean up Vercel Blob.
 
 ### 5.2 API routes
 
@@ -271,13 +296,13 @@ Build the reusable components that will be used across the app. Each component f
 - Returns the created section.
 
 #### `GET /api/sections/:id`
-- Returns the section details if it belongs to the authenticated user.
-- Returns 404 if not found or not owned.
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
+- Returns the section details via `getSection(id)`.
 
 #### `DELETE /api/sections/:id`
-- Validates ownership.
-- Lists all files in the section, deletes each from Vercel Blob.
-- Deletes the section from the database (cascade handles the rest).
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
+- Calls `listFileBlobUrls(sectionId)` (from `files.ts`) to get all blob URLs, deletes them from Vercel Blob.
+- Deletes the section from the database via `deleteSection(id)` (cascade handles the rest).
 
 ### 5.3 Dashboard page (`src/app/(main)/dashboard/page.tsx`)
 - **Top area**: Search input (left) and "Criar nova Seção" (Create new Section) button (right).
@@ -306,8 +331,12 @@ Build the reusable components that will be used across the app. Each component f
 
 ## Phase 6 — File Upload & Processing
 
-### 6.1 Database queries (`src/lib/db/queries/files.ts`)
+### 6.1 Database queries
+
+#### `src/lib/db/queries/files.ts` — additions
+- `verifyFileOwnership(fileId, userId)` — joins `files → sections` and returns `true` if the file's section belongs to the user.
 - `listFiles(sectionId)` — returns all files in a section, ordered by `created_at`.
+- `listFileStatuses(sectionId)` — returns `id`, `original_name`, and `status` for all files in a section. Used by `GET /api/sections/:id/files/status` for polling.
 - `createFile(sectionId, blobUrl, originalName, fileType, sizeBytes)` — inserts a file row with status `uploading`.
 - `updateFileStatus(fileId, status)` — updates the file status.
 - `updateFileExtractedText(fileId, extractedText)` — saves the extracted text and sets status to `processed`.
@@ -315,83 +344,73 @@ Build the reusable components that will be used across the app. Each component f
 - `getFile(fileId)` — returns a single file.
 - `getTotalSizeForSection(sectionId)` — returns the sum of `size_bytes` for all files in the section.
 
+#### `src/lib/db/queries/embeddings.ts`
+- `deleteEmbeddingsByFile(fileId)` — deletes all embeddings for a file. Used by `DELETE /api/files/:id`. Safe to call even before embeddings exist (Phase 8).
+
 ### 6.2 API routes
 
 #### `GET /api/sections/:id/files`
-- Validates section ownership.
-- Returns all files in the section.
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
+- Returns all files in the section via `listFiles(sectionId)`.
 
 #### `POST /api/files/presign`
 - Receives `{ sectionId, fileName, fileType, fileSize }`.
 - Validates:
-  - User is authenticated and owns the section.
-  - Section is in `uploading` status.
-  - File type is allowed (PDF, JPEG, PNG, TXT, DOCX, PPTX, etc.).
-  - Adding this file would not exceed the 100 MB section limit (check `getTotalSizeForSection` + new file size).
+  - Calls `verifySectionOwnership(sectionId, userId)` — returns 404 if not owned.
+  - Calls `getSection(sectionId)` to check the section is in `uploading` status.
+  - File type is allowed. Accepted MIME types (matching Gemini's native support): `application/pdf`, `text/plain`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX), `application/vnd.openxmlformats-officedocument.presentationml.presentation` (PPTX), `image/jpeg`, `image/png`, `image/webp`, `image/heif`.
+  - Adding this file would not exceed the **10 MB section limit** (check `getTotalSizeForSection` + new file size). There is no separate per-file limit — in practice, a single file is also capped at 10 MB.
 - Generates a signed upload URL from Vercel Blob (short expiry, ~5 minutes).
-- Returns the signed URL and a temporary token/identifier for the confirm step.
+- Returns the signed URL.
 
 #### `POST /api/files`
 - Receives `{ sectionId, blobUrl, originalName, fileType, sizeBytes }`.
-- Validates section ownership and status.
+- Calls `verifySectionOwnership(sectionId, userId)` — returns 404 if not owned. Calls `getSection(sectionId)` to validate section status.
 - Creates the file row in the database with status `uploading`.
 - Returns the created file (no call to `process` — the client is responsible for calling it).
 
 #### `POST /api/files/:id/process`
 - File ID is taken from the URL path parameter.
-- Before processing, verify the file exists and belongs to the authenticated user, and that its status is `uploading`, `processing`, or `error` (to allow retries).
-- Processes exactly one file and returns — no self-chaining:
-  1. Get the file from the database.
-  2. Update status to `processing`.
-  3. Download the file content from Vercel Blob.
-  4. **Convert the file to images** before sending to Gemini (see 6.5). Every file type is converted to a sequence of images:
-     - **PDF**: Convert each page to an image (use a library like `pdf-img-convert` or `pdfjs-dist` with canvas rendering).
-     - **DOCX/PPTX**: Convert to PDF first (use `libreoffice-convert` or a similar library), then convert each page/slide to an image.
-     - **Images (JPEG, PNG, etc.)**: Already images — use as-is.
-     - **TXT**: Wrap the text content into a simple layout and render to an image, or send as plain text directly to Gemini (no conversion needed for plain text).
-  5. Send the images to Gemini for AI text extraction (see 6.3). Each image is sent as part of a multimodal prompt. If there are too many images for a single API call, split into batches and concatenate results.
-  6. Save the extracted text to the file row and set status to `processed`. If extraction fails, set status to `error`.
-- The client calls this endpoint once per file immediately after `confirm`. Multiple concurrent calls for different files are fine.
-- For retries: the UI shows a "Retry" button for files with `error` status, which calls this endpoint again with the file ID.
+- Calls `verifyFileOwnership(fileId, userId)` — returns 404 if not owned. Calls `getFile(fileId)` to validate that the file status is `uploading`, `processing`, or `error` (to allow retries).
+- Processes exactly one file and returns:
+  1. Update status to `processing`.
+  2. Download the raw file bytes from Vercel Blob.
+  3. Send the file directly to Gemini as a multimodal prompt (no image conversion — Gemini natively handles PDF, JPEG, PNG, TXT). See 6.3 for the extraction prompt.
+  4. Save the extracted text to the file row and set status to `processed`. If the call fails, set status to `error`.
+- The client calls this endpoint once per file immediately after `POST /api/files`. Multiple concurrent calls for different files are fine.
+- For retries: the UI shows a "Retry" button for files with `error` status, which calls this endpoint again.
 
 #### `DELETE /api/files/:id`
-- Validates that the file belongs to a section owned by the user.
-- Deletes the file from Vercel Blob.
-- Deletes the file row from the database.
-- Also deletes any embeddings associated with this file.
+- Calls `verifyFileOwnership(fileId, userId)` — returns 404 if not owned.
+- Calls `getFile(fileId)` to get the `blob_url`, then deletes it from Vercel Blob.
+- Deletes the file row from the database via `deleteFile(fileId)`.
+- Also deletes any embeddings associated with this file via `deleteEmbeddingsByFile(fileId)`.
 
 #### `GET /api/files/:id/preview`
-- Returns the Blob URL for the original file so the client can display it in the preview modal.
+- Calls `verifyFileOwnership(fileId, userId)` — returns 404 if not owned.
+- Calls `getFile(fileId)` and returns the `blob_url` for the original file so the client can display it in the preview modal.
 
 #### `GET /api/sections/:id/files/status`
-- Returns the status of all files in the section (for polling).
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
+- Returns the status of all files in the section via `listFileStatuses(sectionId)` (for polling).
 
 ### 6.3 AI text extraction setup
 - Write the text extraction prompt in `src/prompts/index.ts`. The prompt instructs the AI to extract:
-  - All readable text.
+  - All readable text (in Markdown).
   - Math formulas converted to LaTeX.
-  - Descriptions of embedded images.
-- Use the `gemini-2.5-flash-lite` model (configured in `src/config/ai.ts`).
+  - Detailed descriptions of any images, diagrams, or non-text content.
+- Use the `gemini-3-flash-preview` model (configured in `src/config/ai.ts`).
+- Supported file types sent directly to Gemini: PDF, JPEG, PNG, TXT. No conversion step needed.
 
 ### 6.4 `src/config/ai.ts` (initial version)
 Create the config file with the initial parameters needed for this phase:
 - `TEXT_EXTRACTION_MODEL: 'gemini-2.5-flash-lite'`
 - Other parameters will be added in later phases as needed.
 
-### 6.5 File-to-image conversion (`src/lib/file-conversion.ts`)
-- `convertToImages(fileBuffer, fileType): Buffer[]` — converts any supported file into a sequence of image buffers:
-  - PDF → one image per page (use `pdf-img-convert` or `pdfjs-dist` with canvas).
-  - DOCX/PPTX → convert to PDF first (use `libreoffice-convert` or similar), then one image per page/slide.
-  - Images (JPEG, PNG) → return as-is.
-  - TXT → return the raw text (no image conversion needed; sent as text directly to Gemini).
-- Install the necessary conversion libraries in Phase 1.2 (add `pdf-img-convert` or equivalent, and `libreoffice-convert` or equivalent for Office formats).
-- **Note**: `libreoffice-convert` requires LibreOffice installed on the server. On Vercel serverless functions, this is not available. Alternative: use a cloud-based document conversion API, or restrict supported file types to PDF, images, and TXT only (dropping DOCX/PPTX support). Decide based on deployment constraints.
+### 6.5 AI wrapper (`src/lib/ai.ts`) — initial version
+- `extractTextFromFile(fileBuffer: Buffer, mimeType: string): Promise<string>` — sends the raw file bytes to Gemini as a multimodal prompt using the extraction instructions from `src/prompts/index.ts`. Returns the extracted text. No image conversion needed — Gemini handles PDF, JPEG, PNG, and TXT natively.
 
-### 6.6 AI wrapper (`src/lib/ai.ts`) — initial version
-- `extractTextFromImages(images: Buffer[]): string` — sends the images to Gemini as a multimodal prompt with the extraction instructions. Returns the extracted text. If there are too many images for a single call, split into batches and concatenate results.
-- `extractTextFromPlainText(text: string): string` — sends plain text to Gemini for structured extraction (LaTeX conversion, formatting). Simpler than the image path.
-
-### 6.7 Uploading UI (`src/app/(main)/sections/[id]/` — Uploading component)
+### 6.6 Uploading UI (`src/app/(main)/sections/[id]/` — Uploading component)
 - **Upload flow (per file)**: `POST /api/files/presign` → upload to Blob → `POST /api/files` → immediately call `POST /api/files/:id/process`. Multiple files upload and process concurrently.
 - **File upload zone**: Dashed border area. Clicking it opens the system file picker. Also supports drag-and-drop.
 - **File list**: Below the upload zone, shows all uploaded files with:
@@ -423,7 +442,15 @@ Add:
 ### 7.3 AI wrapper additions (`src/lib/ai.ts`)
 - `generatePlanBatch(currentPlan, textBatch, guidance?): PlanJSON` — sends the current plan and a batch of text to the LLM, returns the updated plan as structured JSON.
 
-### 7.4 Database queries (`src/lib/db/queries/plans.ts`)
+### 7.4 Database queries
+
+#### `src/lib/db/queries/sections.ts` (additions)
+- `updateSectionStatus(sectionId, status)` — updates the section's status. Used by `start-planning` and `start-studying` routes.
+
+#### `src/lib/db/queries/files.ts` (additions)
+- `getExtractedTexts(sectionId)` — returns the `extracted_text` of all processed files in a section, concatenated or as an array. Used by plan generation and regeneration.
+
+#### `src/lib/db/queries/plans.ts`
 - `createPlanDraft(sectionId, planJson)` — inserts a new plan draft row.
 - `upsertGeneratingDraft(sectionId, planJson)` — during generation, updates the in-progress draft instead of creating a new one. If no draft exists yet for this generation cycle, creates one. This ensures each generation cycle (initial or regeneration) produces only one draft row, keeping the undo stack clean.
 - `getCurrentPlanDraft(sectionId)` — returns the draft with the highest `created_at`.
@@ -441,9 +468,9 @@ Add:
 ### 7.6 API routes
 
 #### `POST /api/sections/:id/start-planning`
-- Validates ownership and that the section is in `uploading` status.
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned. Calls `getSection(id)` to validate that the section is in `uploading` status.
 - Changes section status to `planning`.
-- Gathers all extracted text from the section's files.
+- Calls `getExtractedTexts(sectionId)` to gather all extracted text from the section's files.
 - Splits the text into batches based on `PLAN_BATCH_SIZE`.
 - Stores the batches in the `plan_batches` table via `storePlanBatches()`.
 - Sets `plan_total_batches` and `plan_processed_batches = 0` on the section.
@@ -451,7 +478,7 @@ Add:
 - Returns success.
 
 #### `POST /api/sections/:id/plan/generate-batch` (internal — background job)
-- This is an internal endpoint. Before processing, verify the section is in `planning` status and `plan_processed_batches < plan_total_batches` to prevent external abuse.
+- This is an internal endpoint. Calls `getSection(id)` to verify the section is in `planning` status and `plan_processed_batches < plan_total_batches` to prevent external abuse.
 - Self-chaining job:
   1. Get the current in-progress plan (via `getCurrentPlanDraft`) and retrieve the next batch from `plan_batches` using `getPlanBatch(sectionId, plan_processed_batches)`.
   2. Call `generatePlanBatch()` with the current plan and text batch.
@@ -461,33 +488,39 @@ Add:
   6. If this was the last batch, delete the stored batches via `deletePlanBatches()` and the plan is ready.
 
 #### `GET /api/sections/:id/plan`
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
 - Returns the current plan draft's `plan_json`.
 
 #### `PUT /api/sections/:id/plan`
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
 - Receives the updated `plan_json` from the client (after user edits).
 - Creates a new plan draft row with the updated JSON.
 
 #### `POST /api/sections/:id/plan/undo`
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
 - Deletes the newest plan draft for the section.
 - Returns the new current draft (the previous one).
 - If no drafts remain, returns an error.
 
 #### `POST /api/sections/:id/plan/regenerate`
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
 - Receives `{ guidance }` (optional text).
 - Does NOT delete existing drafts — old drafts are kept so the user can undo back to the pre-regeneration plan.
-- Deletes any leftover `plan_batches` for the section, then re-gathers all extracted text, re-splits into batches, and stores them via `storePlanBatches()`.
+- Deletes any leftover `plan_batches` for the section, then calls `getExtractedTexts(sectionId)` to re-gather all extracted text, re-splits into batches, and stores them via `storePlanBatches()`.
 - Resets `plan_processed_batches` to 0 and recalculates `plan_total_batches`.
 - Creates a new empty draft via `createPlanDraft(sectionId, null)` — this becomes the new "top" of the undo stack while preserving old drafts below it. Then starts the batch chain. Each batch updates this newest draft via `upsertGeneratingDraft()`. The guidance text is passed to the prompt.
 - When complete, the regenerated plan is one new draft on top of the existing stack. Undo walks back to the previous plan.
 
 #### `GET /api/sections/:id/plan/status`
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
+- Calls `getSection(id)` to read `plan_processed_batches` and `plan_total_batches`.
 - Returns the current generation status:
   - `generating` if `plan_processed_batches < plan_total_batches`.
   - `ready` if all batches are processed.
 - Returns the progress as a percentage: `(plan_processed_batches / plan_total_batches) * 100`.
 
 #### `POST /api/sections/:id/start-studying`
-- Validates that the section is in `planning` status and the plan is ready.
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned. Calls `getSection(id)` to validate that the section is in `planning` status and the plan is ready.
 - Gets the current plan draft.
 - Calls `createTopicsFromPlan()` to write topics and subtopics to their tables.
 - Deletes all plan drafts for the section.
@@ -533,10 +566,9 @@ Add:
 - `embedText(text): number[]` — calls Gemini embedding API (`gemini-embedding-001`) with `outputDimensionality: 1536` and returns the vector.
 - `embedChunks(chunks): number[][]` — embeds multiple chunks (can batch API calls for efficiency).
 
-#### Database queries (`src/lib/db/queries/embeddings.ts`)
+#### Database queries (`src/lib/db/queries/embeddings.ts` — additions)
 - `createEmbeddings(sectionId, fileId, chunks, embeddings)` — bulk inserts chunk text and embedding vectors into the `embeddings` table.
 - `searchChunks(sectionId, queryEmbedding, topN)` — performs a vector similarity search (`<=>` cosine distance) on the `embeddings` table, filtered by `section_id`, returning the top N chunks.
-- `deleteEmbeddingsByFile(fileId)` — deletes all embeddings for a file.
 
 #### Embedding pipeline
 - After file processing is complete (Phase 6), add a step that chunks the extracted text and creates embeddings.
@@ -565,16 +597,19 @@ Add all remaining prompts:
 ### 8.4 Database queries
 
 #### `src/lib/db/queries/topics.ts` (additions)
+- `verifyTopicOwnership(topicId, userId)` — joins `topics → sections` and returns `true` if the topic's section belongs to the user.
 - `getTopic(topicId)` — returns a single topic with its subtopics.
 - `toggleTopicCompletion(topicId)` — flips `is_completed`.
 - `getTopicProgress(sectionId)` — returns `{ completed: number, total: number }`.
 - `listTopicsWithMessageCount(sectionId)` — returns all topics with subtopics, ordered by `order`, each including the count of user messages in its chat (LEFT JOIN through `chats` → `messages` where `role = 'user'`). Used by the Studying UI and `GET /api/sections/:id/topics`.
 
 #### `src/lib/db/queries/chats.ts`
+- `verifyChatOwnership(chatId, userId)` — joins `chats → sections` and returns `true` if the chat's section belongs to the user.
 - `findOrCreateChat(sectionId, topicId, type)` — finds an existing chat or creates one. For topic chats, `topicId` is set. For revision chats, `topicId` is null and `type` is `'revision'`.
 - `getChat(chatId)` — returns the chat with its section and topic info.
 
 #### `src/lib/db/queries/messages.ts`
+- `getMessage(messageId)` — returns a single message by ID. Used by undo to retrieve the message content before deletion.
 - `getMessages(chatId)` — returns all messages for a chat, ordered by `id`.
 - `getMessagesAfterSummary(chatId)` — returns messages with `id > summarized_up_to_message_id` (the unsummarized messages).
 - `createMessage(chatId, role, content)` — inserts a message.
@@ -588,26 +623,28 @@ Add all remaining prompts:
 ### 8.5 API routes
 
 #### `GET /api/sections/:id/topics`
-- Returns all topics with subtopics, ordered by `order`.
-- Includes completion status and message count for each topic's chat (via a LEFT JOIN through `chats` → `messages` counting `role = 'user'`).
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
+- Returns all topics via `listTopicsWithMessageCount(sectionId)` — includes subtopics, completion status, and message count for each topic's chat.
 
 #### `PATCH /api/topics/:id`
+- Calls `verifyTopicOwnership(topicId, userId)` — returns 404 if not owned.
 - Toggles `is_completed` for the topic.
 
 #### `POST /api/sections/:id/chats`
 - Receives either `{ topicId }` for topic chats, or `{ type: 'revision' }` for the revision chat.
-- Validates section ownership.
+- Calls `verifySectionOwnership(id, userId)` — returns 404 if not owned.
 - Calls `findOrCreateChat(sectionId, topicId, type)` — finds an existing chat or creates one.
 - Returns the chat (including its `id`, which the client uses to navigate to `/sections/[id]/chat/[chatId]`).
 
 #### `GET /api/chats/:id/messages`
-- Validates that the chat belongs to a section owned by the user.
+- Calls `verifyChatOwnership(chatId, userId)` — returns 404 if not owned.
 - Returns:
   - The summary text (if any).
   - All messages after the summary (unsummarized messages).
   - If no messages exist and this is the first load, generate the initial AI introductory message (see 8.7).
 
 #### `POST /api/chats/:id/messages`
+- Calls `verifyChatOwnership(chatId, userId)` — returns 404 if not owned.
 - Receives `{ content }` (the user's message).
 - **Rate limiting**: Check `getMessageCountLastMinute(userId)`. If over the limit, return 429 with an error message.
 - Save the user's message to the database.
@@ -622,9 +659,9 @@ Add all remaining prompts:
 - After saving, check if summarization is needed (see 8.8).
 
 #### `POST /api/chats/:id/undo/:messageId`
-- Validates ownership and that the message hasn't been summarized (`messageId > summarized_up_to_message_id`).
-- Gets the content of the message being undone (to return it to the client for the input box).
-- Deletes the message and all subsequent messages.
+- Calls `verifyChatOwnership(chatId, userId)` — returns 404 if not owned. Calls `getSummary(chatId)` to validate that the message hasn't been summarized (`messageId > summarized_up_to_message_id`).
+- Calls `getMessage(messageId)` to get the content of the message being undone.
+- Calls `deleteMessagesFrom(chatId, messageId)` to delete the message and all subsequent messages.
 - Returns `{ content }` — the text of the undone message.
 
 ### 8.6 `searchFiles` tool implementation

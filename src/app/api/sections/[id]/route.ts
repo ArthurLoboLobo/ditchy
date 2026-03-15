@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { del } from '@vercel/blob';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { getSection, deleteSection } from '@/lib/db/queries/sections';
-import { sql } from '@/lib/db/connection';
+import { verifySectionOwnership, getSection, deleteSection } from '@/lib/db/queries/sections';
+import { listFileBlobUrls } from '@/lib/db/queries/files';
 
 export async function GET(
   request: NextRequest,
@@ -15,11 +15,12 @@ export async function GET(
     }
 
     const { id } = await params;
-    const section = await getSection(id, userId);
-    if (!section) {
+    const owns = await verifySectionOwnership(id, userId);
+    if (!owns) {
       return NextResponse.json({ error: 'SECTION_NOT_FOUND' }, { status: 404 });
     }
 
+    const section = await getSection(id);
     return NextResponse.json({ section });
   } catch (err) {
     console.error('GET /api/sections/:id error:', err);
@@ -38,19 +39,18 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const section = await getSection(id, userId);
-    if (!section) {
+    const owns = await verifySectionOwnership(id, userId);
+    if (!owns) {
       return NextResponse.json({ error: 'SECTION_NOT_FOUND' }, { status: 404 });
     }
 
     // Delete all associated files from Vercel Blob
-    const fileRows = await sql`SELECT blob_url FROM files WHERE section_id = ${id}`;
-    if (fileRows.length > 0) {
-      const blobUrls = fileRows.map((r) => (r as { blob_url: string }).blob_url);
+    const blobUrls = await listFileBlobUrls(id);
+    if (blobUrls.length > 0) {
       await del(blobUrls);
     }
 
-    await deleteSection(id, userId);
+    await deleteSection(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('DELETE /api/sections/:id error:', err);

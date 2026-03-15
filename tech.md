@@ -99,26 +99,21 @@ db/
 
 ### Storage
 - Files are stored in **Vercel Blob**.
-- **100 MB limit per section** (total across all files in a section).
+- **10 MB limit per section** (total across all files in a section).
 - **Upload flow** (direct-to-Blob with server-side validation):
   1. Client requests a signed upload URL: `POST /api/files/presign`
-  2. Server validates: user is authenticated, section belongs to them, section is in "Uploading" status, file type is allowed, adding this file wouldn't exceed the 100 MB section limit.
+  2. Server validates: user is authenticated, section belongs to them, section is in "Uploading" status, file type is allowed, adding this file wouldn't exceed the 10 MB section limit.
   3. If valid, the server generates a **signed upload URL** from Vercel Blob (short expiry, ~5 minutes) and returns it.
   4. Client uploads directly to Blob using the signed URL (no file data passes through the serverless function).
   5. Client creates the file record: `POST /api/files` — server creates the file row in the database. Client then immediately calls `POST /api/files/:id/process` to trigger text extraction.
 
 ### Processing (Text Extraction)
-- Every uploaded file is first **converted to images** before being sent to Gemini:
-  - **PDF**: Each page is converted to an image.
-  - **DOCX/PPTX**: Converted to PDF first, then each page/slide to an image.
-  - **Images (JPEG, PNG, etc.)**: Used as-is.
-  - **TXT**: Sent as plain text directly (no image conversion needed).
-- The images are sent to Gemini as a multimodal prompt. The AI extracts:
-  - All readable text
+- Files are sent **directly to Gemini** as multimodal input — no image conversion step. Gemini natively handles PDF, JPEG, PNG, and TXT.
+- The AI extracts:
+  - All readable text (in Markdown)
   - Math formulas (converted to LaTeX)
-  - Image descriptions (for any embedded images/diagrams)
-- If there are too many images for a single AI call, they are split into batches and the results are concatenated.
-- Processing runs as a **background job** with status polling from the client (`Uploading` → `Processing` → `Processed`). If extraction fails, the file status is set to `Error` and the user can retry.
+  - Detailed descriptions of any images, diagrams, or non-text content
+- Processing runs as a **background job** (`POST /api/files/:id/process`) with status polling from the client (`Uploading` → `Processing` → `Processed`). If extraction fails, the file status is set to `Error` and the user can retry.
 
 > **Future optimization**: For plain text files or PDFs with selectable text, consider extracting text locally (via a library) to save on AI token costs, and only send scanned/image-heavy files to the AI.
 
@@ -150,10 +145,10 @@ db/
 
 | Task                          | Model                            |
 | ----------------------------- | -------------------------------- |
-| Teaching chat (topic & revision) | `gemini-3.1-flash-lite-preview` |
-| Text extraction               | `gemini-2.5-flash-lite`          |
-| Study plan generation         | `gemini-2.5-flash-lite`          |
-| Chat summarization            | `gemini-2.5-flash-lite`          |
+| Teaching chat (topic & revision) | `gemini-3-flash-preview` |
+| Text extraction               | `gemini-3-flash-preview`          |
+| Study plan generation         | `gemini-3-flash-preview`          |
+| Chat summarization            | `gemini-3-flash-preview`          |
 
 ### Config File (`config/ai.ts`)
 
@@ -245,7 +240,7 @@ All prompts are hardcoded in the codebase. When a prompt is needed, it is import
 ### Limits
 
 - **Max 10 sections per user**. To create more, the user must delete an existing section.
-- **100 MB file limit per section** (defined in File Handling).
+- **10 MB file limit per section** (defined in File Handling).
 
 ### File Preview
 
