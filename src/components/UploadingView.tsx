@@ -10,6 +10,7 @@ import Spinner from '@/components/ui/Spinner';
 
 interface UploadingViewProps {
   sectionId: string;
+  onStatusChange?: (status: string) => void;
 }
 
 interface LocalFile {
@@ -35,11 +36,12 @@ const UPLOAD_ERROR_MAP: Record<string, string> = {
   SIZE_LIMIT_EXCEEDED: 'SIZE_LIMIT_EXCEEDED',
 };
 
-export default function UploadingView({ sectionId }: UploadingViewProps) {
+export default function UploadingView({ sectionId, onStatusChange }: UploadingViewProps) {
   const { t } = useTranslation();
 
   const [files, setFiles] = useState<LocalFile[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [startingPlan, setStartingPlan] = useState(false);
   const [previewFile, setPreviewFile] = useState<LocalFile | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LocalFile | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -317,9 +319,22 @@ export default function UploadingView({ sectionId }: UploadingViewProps) {
       {/* Start Planning button */}
       <div className="mt-6 flex justify-end">
         <Button
-          disabled={!allProcessed}
-          onClick={() => {
-            /* no-op — wired in Phase 7 */
+          disabled={!allProcessed || startingPlan}
+          loading={startingPlan}
+          onClick={async () => {
+            setStartingPlan(true);
+            try {
+              const res = await fetch(`/api/sections/${sectionId}/start-planning`, {
+                method: 'POST',
+              });
+              if (res.ok) {
+                onStatusChange?.('planning');
+              }
+            } catch {
+              // fail silently
+            } finally {
+              setStartingPlan(false);
+            }
           }}
         >
           {t.uploading.startPlanning}

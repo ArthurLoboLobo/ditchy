@@ -90,3 +90,12 @@ export async function getTotalSizeForSection(sectionId: string): Promise<number>
   `;
   return (rows[0] as { total: number }).total;
 }
+
+export async function getExtractedTexts(sectionId: string): Promise<string[]> {
+  const rows = await sql`
+    SELECT extracted_text FROM files
+    WHERE section_id = ${sectionId} AND status = 'processed' AND extracted_text IS NOT NULL
+    ORDER BY created_at ASC
+  `;
+  return rows.map((r) => (r as { extracted_text: string }).extracted_text);
+}

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 import Spinner from '@/components/ui/Spinner';
 import UploadingView from '@/components/UploadingView';
+import PlanningView from '@/components/PlanningView';
 
 interface Section {
   id: string;
@@ -61,23 +62,24 @@ export default function SectionPage() {
   }
 
   if (section.status === 'uploading') {
-    return <UploadingView sectionId={section.id} />;
+    return (
+      <UploadingView
+        sectionId={section.id}
+        onStatusChange={(status) => setSection({ ...section, status })}
+      />
+    );
   }
 
   if (section.status === 'planning') {
-    return <PlanningPlaceholder label={t.section.planningPlaceholder} />;
+    return (
+      <PlanningView
+        sectionId={section.id}
+        onStatusChange={(status) => setSection({ ...section, status })}
+      />
+    );
   }
 
   return <StudyingPlaceholder label={t.section.studyingPlaceholder} />;
-}
-
-function PlanningPlaceholder({ label }: { label: string }) {
-  return (
-    <div className="text-center py-20">
-      <p className="text-sm text-primary-text">{label}</p>
-      <p className="text-xs text-muted-text mt-1">Coming in Phase 7</p>
-    </div>
-  );
 }
 
 function StudyingPlaceholder({ label }: { label: string }) {

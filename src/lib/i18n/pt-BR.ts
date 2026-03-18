@@ -77,6 +77,25 @@ export interface Translations {
     };
     emptyFiles: string;
   };
+  planning: {
+    loading: string;
+    errorMessage: string;
+    errorInterrupted: string;
+    retry: string;
+    undo: string;
+    regenerate: string;
+    regenerateGuidancePlaceholder: string;
+    regenerateConfirm: string;
+    regenerateCancel: string;
+    startStudying: string;
+    alreadyKnown: string;
+    addTopic: string;
+    addSubtopic: string;
+    newTopicTitle: string;
+    newSubtopicText: string;
+    saveFailed: string;
+    undoFailed: string;
+  };
   errors: {
     EMAIL_INVALID: string;
     EMAIL_MISSING: string;
@@ -176,6 +195,25 @@ const ptBR: Translations = {
       UPLOAD_FAILED: 'Falha ao enviar o arquivo.',
     },
     emptyFiles: 'Nenhum arquivo enviado ainda.',
+  },
+  planning: {
+    loading: 'Criando seu plano de estudos...',
+    errorMessage: 'Erro ao gerar o plano de estudos.',
+    errorInterrupted: 'A geração do plano foi interrompida. Volte ao painel e tente novamente.',
+    retry: 'Tentar novamente',
+    undo: 'Desfazer',
+    regenerate: 'Regenerar Plano',
+    regenerateGuidancePlaceholder: 'Ex: Focar mais em cálculo',
+    regenerateConfirm: 'Regenerar',
+    regenerateCancel: 'Cancelar',
+    startStudying: 'Começar a Estudar',
+    alreadyKnown: 'Já domino',
+    addTopic: 'Adicionar tópico',
+    addSubtopic: 'Adicionar subtópico',
+    newTopicTitle: 'Novo tópico',
+    newSubtopicText: 'Novo subtópico',
+    saveFailed: 'Falha ao salvar.',
+    undoFailed: 'Falha ao desfazer.',
   },
   errors: {
     EMAIL_INVALID: 'E-mail invalido.',

@@ -69,3 +69,9 @@ export async function deleteSection(sectionId: string): Promise<void> {
     DELETE FROM sections WHERE id = ${sectionId}
   `;
 }
+
+export async function updateSectionStatus(sectionId: string, status: string): Promise<void> {
+  await sql`
+    UPDATE sections SET status = ${status} WHERE id = ${sectionId}
+  `;
+}
