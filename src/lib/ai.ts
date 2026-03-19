@@ -1,7 +1,8 @@
-import { generateText, generateObject } from 'ai';
+import { generateText, generateObject, embed, embedMany, tool } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod/v4';
-import { TEXT_EXTRACTION_MODEL, PLAN_GENERATION_MODEL } from '@/config/ai';
+import { TEXT_EXTRACTION_MODEL, PLAN_GENERATION_MODEL, EMBEDDING_MODEL, CHUNK_SIZE, CHUNK_OVERLAP, TOP_N_CHUNKS } from '@/config/ai';
+import { searchChunks } from '@/lib/db/queries/embeddings';
 import { TEXT_EXTRACTION_PROMPT, PLAN_GENERATION_PROMPT, planRegenerationPrompt } from '@/prompts';
 
 export type PlanJSON = {
@@ -98,4 +99,84 @@ export async function extractTextFromFile(
   });
 
   return text;
+}
+
+export function chunkText(
+  text: string,
+  chunkSize: number = CHUNK_SIZE,
+  overlap: number = CHUNK_OVERLAP,
+): string[] {
+  if (!text || !text.trim()) return [];
+
+  const charChunkSize = chunkSize * 4;
+  const charOverlap = overlap * 4;
+  const step = charChunkSize - charOverlap;
+  const chunks: string[] = [];
+
+  for (let start = 0; start < text.length; start += step) {
+    let end = Math.min(start + charChunkSize, text.length);
+
+    if (end < text.length) {
+      const window = text.slice(start, end);
+      const lastDoubleNewline = window.lastIndexOf('\n\n');
+      if (lastDoubleNewline > charChunkSize * 0.5) {
+        end = start + lastDoubleNewline + 2;
+      } else {
+        const lastNewline = window.lastIndexOf('\n');
+        if (lastNewline > charChunkSize * 0.5) {
+          end = start + lastNewline + 1;
+        } else {
+          const lastSpace = window.lastIndexOf(' ');
+          if (lastSpace > charChunkSize * 0.5) {
+            end = start + lastSpace + 1;
+          }
+        }
+      }
+    }
+
+    const chunk = text.slice(start, end).trim();
+    if (chunk) chunks.push(chunk);
+
+    if (end >= text.length) break;
+  }
+
+  return chunks;
+}
+
+export async function embedText(
+  text: string,
+  taskType: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY',
+): Promise<number[]> {
+  const { embedding } = await embed({
+    model: google.embedding(EMBEDDING_MODEL),
+    value: text,
+    providerOptions: { google: { outputDimensionality: 1536, taskType } },
+  });
+  return embedding;
+}
+
+export async function embedTexts(
+  texts: string[],
+  taskType: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY',
+): Promise<number[][]> {
+  if (texts.length === 0) return [];
+
+  const { embeddings } = await embedMany({
+    model: google.embedding(EMBEDDING_MODEL),
+    values: texts,
+    providerOptions: { google: { outputDimensionality: 1536, taskType } },
+  });
+  return embeddings;
+}
+
+export function createSearchStudentMaterialsTool(sectionId: string) {
+  return tool({
+    description: 'Search the student\'s uploaded study materials for relevant content.',
+    inputSchema: z.object({ query: z.string() }),
+    execute: async ({ query }) => {
+      const embedding = await embedText(query, 'RETRIEVAL_QUERY');
+      const results = await searchChunks(sectionId, embedding, TOP_N_CHUNKS);
+      return results.map((r) => r.chunk_text).join('\n\n---\n\n');
+    },
+  });
 }

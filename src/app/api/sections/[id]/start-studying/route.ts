@@ -3,8 +3,10 @@ import { getUserIdFromRequest } from '@/lib/auth';
 import { verifySectionOwnership, getSection, updateSectionStatus } from '@/lib/db/queries/sections';
 import { getCurrentPlanDraft, deleteAllPlanDrafts } from '@/lib/db/queries/plans';
 import { createTopicsFromPlan } from '@/lib/db/queries/topics';
+import { validatePlanJSON, chunkText, embedTexts } from '@/lib/ai';
 import type { PlanJSON } from '@/lib/ai';
-import { validatePlanJSON } from '@/lib/ai';
+import { listFiles } from '@/lib/db/queries/files';
+import { createEmbeddings } from '@/lib/db/queries/embeddings';
 
 export async function POST(
   request: NextRequest,
@@ -38,6 +40,17 @@ export async function POST(
     }
 
     await createTopicsFromPlan(id, plan);
+
+    // Chunk and embed files for RAG
+    const files = await listFiles(id);
+    for (const file of files) {
+      if (!file.extracted_text) continue;
+      const chunks = chunkText(file.extracted_text);
+      if (chunks.length === 0) continue;
+      const embeddings = await embedTexts(chunks, 'RETRIEVAL_DOCUMENT');
+      await createEmbeddings(id, file.id, chunks, embeddings);
+    }
+
     await deleteAllPlanDrafts(id);
     await updateSectionStatus(id, 'studying');
 

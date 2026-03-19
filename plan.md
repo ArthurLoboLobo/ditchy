@@ -844,3 +844,5 @@ The i18n infrastructure (`src/i18n/`, `useTranslation()` hook, language cookie) 
   - Make the navbar match the content width instead of spanning the full viewport width.
   - Use icons instead of text labels for action buttons where possible (e.g., an undo icon instead of writing "Desfazer").
 - **Optimistic uploading UI**: Switch the uploading page from pessimistic to optimistic updates — show files as added immediately in the UI before the server confirms, and handle errors by reverting.
+- **Improve embedding chunking**: Ensure the text chunking algorithm never splits a word into two separate chunks — always break at word boundaries.
+- **Smarter problem-aware retrieval**: Make the embedding and retrieval process more efficient by ensuring each problem is always placed in its own chunk(s). When a chunk belonging to a problem is retrieved via similarity search, return the entire problem (and its solution, if available) rather than just the matched chunk.
