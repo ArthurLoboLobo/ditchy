@@ -564,9 +564,9 @@ If `start-planning` or `regenerate` returns an error (network error, AI failure)
 ## Phase 8 — Embeddings (RAG Pipeline)
 
 ### 8.1 AI functions (`src/lib/ai.ts` — additions)
-- `chunkText(text, chunkSize, overlap): string[]` — splits text into chunks of ~512 tokens with ~100 token overlap.
+- `chunkText(text, chunkSize?, overlap?): string[]` — splits text into chunks. `chunkSize` and `overlap` default to `CHUNK_SIZE` and `CHUNK_OVERLAP` from `src/config/ai.ts`.
 - `embedText(text, taskType): number[]` — calls Gemini embedding API (`gemini-embedding-2-preview`) with `outputDimensionality: 1536` and the specified `taskType` (`RETRIEVAL_DOCUMENT` or `RETRIEVAL_QUERY`). Returns the vector.
-- `embedChunks(chunks): number[][]` — embeds multiple chunks using `taskType: RETRIEVAL_DOCUMENT` (can batch API calls for efficiency).
+- `embedTexts(texts, taskType): number[][]` — embeds multiple texts with the given `taskType` (can batch API calls for efficiency).
 
 ### 8.2 AI config additions (`src/config/ai.ts`)
 Add embedding-related parameters:
@@ -579,10 +579,10 @@ Add embedding-related parameters:
 - `createEmbeddings(sectionId, fileId, chunks, embeddings)` — bulk inserts chunk text and embedding vectors into the `embeddings` table.
 - `searchChunks(sectionId, queryEmbedding, topN)` — performs a vector similarity search (`<=>` cosine distance) on the `embeddings` table, filtered by `section_id`, returning the top N chunks.
 
-### 8.4 `searchFiles` tool implementation
+### 8.4 `searchStudentMaterials` tool implementation
 - Define the tool schema for the Vercel AI SDK:
-  - Name: `searchFiles`
-  - Description: "Search the student's uploaded files for relevant content."
+  - Name: `searchStudentMaterials`
+  - Description: "Search the student's uploaded study materials for relevant content."
   - Parameters: `{ query: string }`
 - When the LLM calls this tool:
   1. Embed the `query` using `embedText(query, 'RETRIEVAL_QUERY')`.
@@ -591,10 +591,10 @@ Add embedding-related parameters:
 
 ### 8.5 Update `POST /api/sections/:id/start-studying`
 Add an embedding step to the existing `start-studying` endpoint. After creating topics from the plan:
-1. Call `getExtractedTexts(sectionId)` to gather all extracted text from the section's files.
-2. For each file's extracted text, chunk it using `chunkText()`.
-3. Embed all chunks using `embedChunks()`.
-4. Store the embeddings via `createEmbeddings()`.
+1. Call `listFiles(sectionId)` to get all files (each row includes `id` and `extracted_text`).
+2. For each file with `extracted_text`, chunk it using `chunkText()`.
+3. Embed all chunks using `embedTexts(chunks, 'RETRIEVAL_DOCUMENT')`.
+4. Store the embeddings via `createEmbeddings(sectionId, fileId, chunks, embeddings)` — the `fileId` comes from the file row.
 
 The updated endpoint flow becomes:
 1. Verify ownership and validate section is in `planning` status.
@@ -624,7 +624,7 @@ The updated endpoint flow becomes:
 
 ### 9.2 Update `POST /api/sections/:id/start-studying`
 Add chat creation to the existing `start-studying` endpoint. After creating embeddings (Phase 8.5):
-1. Collect all newly created topic IDs.
+1. Call `listTopics(sectionId)` to get all topics (already exists from Phase 7) and extract their IDs.
 2. Call `createChatsForSection(sectionId, topicIds)` to create one chat per topic + one revision chat.
 
 The final endpoint flow becomes:
@@ -716,7 +716,7 @@ Add all remaining prompts:
   - Summary (if any).
   - Recent messages (unsummarized).
   - The new user message.
-- Call the LLM with streaming enabled, including the `searchFiles` tool definition.
+- Call the LLM with streaming enabled, including the `searchStudentMaterials` tool definition.
 - Stream the response back to the client token-by-token.
 - When the stream completes, save the full assistant message to the database.
 - After saving, check if summarization is needed (see 10.7).
