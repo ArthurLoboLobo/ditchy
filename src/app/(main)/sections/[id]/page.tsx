@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18n';
 import Spinner from '@/components/ui/Spinner';
 import UploadingView from '@/components/UploadingView';
 import PlanningView from '@/components/PlanningView';
+import StudyingView from '@/components/StudyingView';
 
 interface Section {
   id: string;
@@ -79,14 +80,5 @@ export default function SectionPage() {
     );
   }
 
-  return <StudyingPlaceholder label={t.section.studyingPlaceholder} />;
-}
-
-function StudyingPlaceholder({ label }: { label: string }) {
-  return (
-    <div className="text-center py-20">
-      <p className="text-sm text-primary-text">{label}</p>
-      <p className="text-xs text-muted-text mt-1">Coming in Phase 8</p>
-    </div>
-  );
+  return <StudyingView sectionId={section.id} />;
 }

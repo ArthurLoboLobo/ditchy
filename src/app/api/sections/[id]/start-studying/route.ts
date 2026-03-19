@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { verifySectionOwnership, getSection, updateSectionStatus } from '@/lib/db/queries/sections';
 import { getCurrentPlanDraft, deleteAllPlanDrafts } from '@/lib/db/queries/plans';
-import { createTopicsFromPlan } from '@/lib/db/queries/topics';
+import { createTopicsFromPlan, listTopics } from '@/lib/db/queries/topics';
+import { createChatsForSection } from '@/lib/db/queries/chats';
 import { validatePlanJSON, chunkText, embedTexts } from '@/lib/ai';
 import type { PlanJSON } from '@/lib/ai';
 import { listFiles } from '@/lib/db/queries/files';
@@ -50,6 +51,10 @@ export async function POST(
       const embeddings = await embedTexts(chunks, 'RETRIEVAL_DOCUMENT');
       await createEmbeddings(id, file.id, chunks, embeddings);
     }
+
+    const topics = await listTopics(id);
+    const topicIds = topics.map((t) => t.id);
+    await createChatsForSection(id, topicIds);
 
     await deleteAllPlanDrafts(id);
     await updateSectionStatus(id, 'studying');

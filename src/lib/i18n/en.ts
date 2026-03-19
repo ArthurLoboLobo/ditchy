@@ -103,6 +103,16 @@ const en: Translations = {
     saveFailed: 'Failed to save.',
     undoFailed: 'Failed to undo.',
   },
+  studying: {
+    progressText: 'topics completed',
+    interactions: 'interactions',
+    noInteractions: 'No interactions',
+    revision: 'Revision',
+    revisionDescription: 'General revision across all topics',
+    loading: 'Loading topics...',
+    errorLoading: 'Failed to load topics.',
+    retry: 'Try again',
+  },
   errors: {
     EMAIL_INVALID: 'Invalid email.',
     EMAIL_MISSING: 'Please enter your email.',

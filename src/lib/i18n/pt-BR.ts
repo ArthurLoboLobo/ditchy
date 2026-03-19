@@ -96,6 +96,16 @@ export interface Translations {
     saveFailed: string;
     undoFailed: string;
   };
+  studying: {
+    progressText: string;
+    interactions: string;
+    noInteractions: string;
+    revision: string;
+    revisionDescription: string;
+    loading: string;
+    errorLoading: string;
+    retry: string;
+  };
   errors: {
     EMAIL_INVALID: string;
     EMAIL_MISSING: string;
@@ -214,6 +224,16 @@ const ptBR: Translations = {
     newSubtopicText: 'Novo subtópico',
     saveFailed: 'Falha ao salvar.',
     undoFailed: 'Falha ao desfazer.',
+  },
+  studying: {
+    progressText: 'tópicos completos',
+    interactions: 'interações',
+    noInteractions: 'Nenhuma interação',
+    revision: 'Revisão',
+    revisionDescription: 'Revisão geral de todos os tópicos',
+    loading: 'Carregando tópicos...',
+    errorLoading: 'Erro ao carregar tópicos.',
+    retry: 'Tentar novamente',
   },
   errors: {
     EMAIL_INVALID: 'E-mail inválido.',
