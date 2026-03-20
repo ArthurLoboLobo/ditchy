@@ -51,7 +51,7 @@ export default function Navbar() {
         <button
           onClick={() => { setOpen((v) => !v); setShowLanguages(false); }}
           className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 cursor-pointer"
-          aria-label="Menu do perfil"
+          aria-label={t.nav.profileMenu}
           aria-expanded={open}
         >
           <AvatarIcon />

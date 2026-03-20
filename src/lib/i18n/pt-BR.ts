@@ -2,6 +2,7 @@ export interface Translations {
   auth: {
     tagline: string;
     hero: string;
+    learnMore: string;
     steps: { title: string; description: string }[];
     emailLabel: string;
     emailPlaceholder: string;
@@ -19,6 +20,7 @@ export interface Translations {
     language: string;
     logout: string;
     dashboard: string;
+    profileMenu: string;
   };
   dashboard: {
     searchPlaceholder: string;
@@ -136,11 +138,11 @@ const ptBR: Translations = {
   auth: {
     tagline: 'Prepare-se para suas provas com IA',
     hero: 'Transforme seu material de estudo em um plano personalizado com tutoria inteligente.',
+    learnMore: 'Entenda como funciona',
     steps: [
-      { title: 'Envie seus materiais', description: 'Provas anteriores, slides, anotações...' },
-      { title: 'Receba um plano de estudo', description: 'A IA analisa e cria um plano personalizado' },
-      { title: 'Estude com tutoria IA', description: 'Chats por tópico com acesso ao seu material' },
-      { title: 'Revise e domine', description: 'Acompanhe seu progresso e tire dúvidas gerais' },
+      { title: 'Envie Seus Materiais', description: 'Ditchy não é um tutor genérico. Envie suas provas anteriores, slides de aulas e anotações pessoais. Ele aprende exatamente o que seu professor quer que você saiba.' },
+      { title: 'Receba um Plano de Estudos Inteligente', description: 'Nossa IA analisa automaticamente seus documentos e estrutura um plano de estudos personalizado, dividido em tópicos e subtópicos fáceis de digerir. Edite, reordene e refine o plano antes de começar.' },
+      { title: 'Domine Tópicos com IA', description: 'Mergulhe em chats de IA dedicados para cada tópico. Resolva problemas gerados dinamicamente, acompanhe seu progresso e converse com um LLM que usa explicitamente o material exato que você enviou.' },
     ],
     emailLabel: 'E-mail',
     emailPlaceholder: 'seu@email.com',
@@ -158,6 +160,7 @@ const ptBR: Translations = {
     language: 'Idioma',
     logout: 'Sair',
     dashboard: 'Painel',
+    profileMenu: 'Menu do perfil',
   },
   dashboard: {
     searchPlaceholder: 'Buscar seções...',
