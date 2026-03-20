@@ -35,6 +35,7 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
   const [plan, setPlan] = useState<PlanJSON | null>(null);
   const [mode, setMode] = useState<'loading' | 'error' | 'editor'>('loading');
   const [saving, setSaving] = useState(false);
+  const [startingStudy, setStartingStudy] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [showRegenerateInput, setShowRegenerateInput] = useState(false);
   const [guidanceText, setGuidanceText] = useState('');
@@ -159,6 +160,7 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
   }
 
   async function handleStartStudying() {
+    setStartingStudy(true);
     setSaving(true);
     try {
       const res = await fetch(`/api/sections/${sectionId}/start-studying`, {
@@ -170,6 +172,7 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
     } catch {
       // fail silently
     } finally {
+      setStartingStudy(false);
       setSaving(false);
     }
   }
@@ -287,6 +290,16 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
+
+  // --- Starting study loading state ---
+  if (startingStudy) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <Spinner size={28} />
+        <p className="text-sm text-muted-text">{t.studying.loading}</p>
+      </div>
+    );
+  }
 
   // --- Loading state ---
   if (mode === 'loading') {

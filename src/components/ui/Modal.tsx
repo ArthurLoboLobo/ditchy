@@ -38,9 +38,9 @@ export default function Modal({ open, onClose, title, children, className = '' }
       />
       <div
         className={`
-          relative z-10 w-full max-w-md m-auto
+          relative z-10 w-full m-auto
           bg-surface border border-border-subtle rounded-3xl p-6 shadow-2xl animate-modal-pop
-          ${className}
+          ${className || 'max-w-md'}
         `}
       >
         <div className="flex items-start justify-between mb-4">

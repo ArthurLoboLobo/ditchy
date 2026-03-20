@@ -360,7 +360,7 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
         open={!!previewFile}
         onClose={() => setPreviewFile(null)}
         title={t.uploading.previewTitle}
-        className="max-w-3xl"
+        className="max-w-[95vw] w-full"
       >
         {previewFile && (
           <FilePreview file={previewFile} noPreviewLabel={t.uploading.noPreview} />
