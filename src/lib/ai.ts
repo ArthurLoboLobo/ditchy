@@ -4,6 +4,7 @@ import { z } from 'zod/v4';
 import { TEXT_EXTRACTION_MODEL, PLAN_GENERATION_MODEL, SUMMARIZATION_MODEL, EMBEDDING_MODEL, CHUNK_SIZE, CHUNK_OVERLAP, TOP_N_CHUNKS } from '@/config/ai';
 import { searchChunks } from '@/lib/db/queries/embeddings';
 import { TEXT_EXTRACTION_PROMPT, PLAN_GENERATION_PROMPT, planRegenerationPrompt, CHAT_SUMMARIZATION_PROMPT } from '@/prompts';
+import { insertAiCallLog } from '@/lib/db/queries/aiLogs';
 
 export type PlanJSON = {
   topics: {
@@ -38,7 +39,8 @@ const planSchema = z.object({
 });
 
 export async function generatePlan(allText: string): Promise<PlanJSON> {
-  const { object } = await generateObject({
+  const start = Date.now();
+  const { object, usage } = await generateObject({
     model: google(PLAN_GENERATION_MODEL),
     schema: planSchema,
     messages: [
@@ -51,6 +53,15 @@ export async function generatePlan(allText: string): Promise<PlanJSON> {
       },
     ],
   });
+  insertAiCallLog({
+    label: 'plan-generation',
+    model: PLAN_GENERATION_MODEL,
+    inputTokens: usage?.inputTokens ?? null,
+    outputTokens: usage?.outputTokens ?? null,
+    inputText: PLAN_GENERATION_PROMPT + '\n' + allText,
+    outputText: JSON.stringify(object),
+    durationMs: Date.now() - start,
+  });
   return object as PlanJSON;
 }
 
@@ -58,7 +69,8 @@ export async function regeneratePlan(
   allText: string,
   guidance: string,
 ): Promise<PlanJSON> {
-  const { object } = await generateObject({
+  const start = Date.now();
+  const { object, usage } = await generateObject({
     model: google(PLAN_GENERATION_MODEL),
     schema: planSchema,
     messages: [
@@ -71,6 +83,15 @@ export async function regeneratePlan(
       },
     ],
   });
+  insertAiCallLog({
+    label: 'plan-regeneration',
+    model: PLAN_GENERATION_MODEL,
+    inputTokens: usage?.inputTokens ?? null,
+    outputTokens: usage?.outputTokens ?? null,
+    inputText: planRegenerationPrompt(guidance) + '\n' + allText,
+    outputText: JSON.stringify(object),
+    durationMs: Date.now() - start,
+  });
   return object as PlanJSON;
 }
 
@@ -78,7 +99,8 @@ export async function extractTextFromFile(
   fileBuffer: Buffer,
   mimeType: string,
 ): Promise<string> {
-  const { text } = await generateText({
+  const start = Date.now();
+  const { text, usage } = await generateText({
     model: google(TEXT_EXTRACTION_MODEL),
     messages: [
       {
@@ -97,7 +119,15 @@ export async function extractTextFromFile(
       },
     ],
   });
-
+  insertAiCallLog({
+    label: 'text-extraction',
+    model: TEXT_EXTRACTION_MODEL,
+    inputTokens: usage?.inputTokens ?? null,
+    outputTokens: usage?.outputTokens ?? null,
+    inputText: TEXT_EXTRACTION_PROMPT + `\n[binary file: ${mimeType}]`,
+    outputText: text,
+    durationMs: Date.now() - start,
+  });
   return text;
 }
 
@@ -147,10 +177,20 @@ export async function embedText(
   text: string,
   taskType: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY',
 ): Promise<number[]> {
-  const { embedding } = await embed({
+  const start = Date.now();
+  const { embedding, usage } = await embed({
     model: google.embedding(EMBEDDING_MODEL),
     value: text,
     providerOptions: { google: { outputDimensionality: 1536, taskType } },
+  });
+  insertAiCallLog({
+    label: 'embed-single',
+    model: EMBEDDING_MODEL,
+    inputTokens: usage?.tokens ?? null,
+    outputTokens: null,
+    inputText: text,
+    outputText: null,
+    durationMs: Date.now() - start,
   });
   return embedding;
 }
@@ -161,10 +201,20 @@ export async function embedTexts(
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
 
-  const { embeddings } = await embedMany({
+  const start = Date.now();
+  const { embeddings, usage } = await embedMany({
     model: google.embedding(EMBEDDING_MODEL),
     values: texts,
     providerOptions: { google: { outputDimensionality: 1536, taskType } },
+  });
+  insertAiCallLog({
+    label: 'embed-batch',
+    model: EMBEDDING_MODEL,
+    inputTokens: usage?.tokens ?? null,
+    outputTokens: null,
+    inputText: texts.join('\n---\n'),
+    outputText: null,
+    durationMs: Date.now() - start,
   });
   return embeddings;
 }
@@ -178,12 +228,21 @@ export async function summarizeChat(
     ? `<previous_summary>\n${previousSummary}\n</previous_summary>\n\n<new_messages>\n${messageText}\n</new_messages>`
     : `<messages>\n${messageText}\n</messages>`;
 
-  const { text } = await generateText({
+  const start = Date.now();
+  const { text, usage } = await generateText({
     model: google(SUMMARIZATION_MODEL),
     system: CHAT_SUMMARIZATION_PROMPT,
     messages: [{ role: 'user', content: userContent }],
   });
-
+  insertAiCallLog({
+    label: 'chat-summarization',
+    model: SUMMARIZATION_MODEL,
+    inputTokens: usage?.inputTokens ?? null,
+    outputTokens: usage?.outputTokens ?? null,
+    inputText: CHAT_SUMMARIZATION_PROMPT + '\n' + userContent,
+    outputText: text,
+    durationMs: Date.now() - start,
+  });
   return text;
 }
 

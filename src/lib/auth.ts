@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
+import { sql } from '@/lib/db/connection';
 
 const COOKIE_NAME = 'ditchy_token';
 const THIRTY_DAYS_SECONDS = 60 * 60 * 24 * 30;
@@ -52,4 +53,12 @@ export async function getUserIdFromRequest(request: NextRequest): Promise<string
   if (!token) return null;
   const result = await verifyToken(token);
   return result?.userId ?? null;
+}
+
+export async function isAdmin(userId: string): Promise<boolean> {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return false;
+  const rows = await sql`SELECT email FROM users WHERE id = ${userId} LIMIT 1`;
+  if (!rows[0]) return false;
+  return (rows[0] as { email: string }).email === adminEmail;
 }

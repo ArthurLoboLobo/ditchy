@@ -8,6 +8,7 @@ import { getSummary, upsertSummary } from '@/lib/db/queries/summaries';
 import { listTopics } from '@/lib/db/queries/topics';
 import { createSearchStudentMaterialsTool, summarizeChat } from '@/lib/ai';
 import { TEACHING_CHAT_MODEL, RATE_LIMIT_MESSAGES_PER_MINUTE, SUMMARIZATION_TOKEN_THRESHOLD, MIN_UNSUMMARIZED_MESSAGES } from '@/config/ai';
+import { insertAiCallLog } from '@/lib/db/queries/aiLogs';
 import {
   topicChatSystemPrompt,
   revisionChatSystemPrompt,
@@ -85,12 +86,24 @@ export async function GET(
         initialMessage = lang === 'en' ? REVISION_CHAT_INITIAL_USER_MESSAGE_EN : REVISION_CHAT_INITIAL_USER_MESSAGE_PT;
       }
 
-      const { text } = await generateText({
+      const greetingStart = Date.now();
+      const { text, usage: greetingUsage } = await generateText({
         model: google(TEACHING_CHAT_MODEL),
         system: systemPrompt,
         messages: [{ role: 'user', content: initialMessage }],
         tools: { searchStudentMaterials: createSearchStudentMaterialsTool(chat.section_id) },
         stopWhen: stepCountIs(3),
+      });
+      insertAiCallLog({
+        label: 'chat-initial-greeting',
+        model: TEACHING_CHAT_MODEL,
+        inputTokens: greetingUsage?.inputTokens ?? null,
+        outputTokens: greetingUsage?.outputTokens ?? null,
+        inputText: systemPrompt + '\n' + initialMessage,
+        outputText: text,
+        userId,
+        sectionId: chat.section_id,
+        durationMs: Date.now() - greetingStart,
       });
 
       const saved = await createMessage(chatId, 'assistant', text);
@@ -180,13 +193,25 @@ export async function POST(
       llmMessages.push({ role: msg.role as 'user' | 'assistant', content: msg.content });
     }
 
+    const streamStart = Date.now();
     const result = streamText({
       model: google(TEACHING_CHAT_MODEL),
       system: systemPrompt,
       messages: llmMessages,
       tools: { searchStudentMaterials: createSearchStudentMaterialsTool(chat.section_id) },
       stopWhen: stepCountIs(3),
-      async onFinish({ text }) {
+      async onFinish({ text, usage: streamUsage }) {
+        insertAiCallLog({
+          label: 'chat-stream',
+          model: TEACHING_CHAT_MODEL,
+          inputTokens: streamUsage?.inputTokens ?? null,
+          outputTokens: streamUsage?.outputTokens ?? null,
+          inputText: systemPrompt + '\n' + JSON.stringify(llmMessages),
+          outputText: text,
+          userId,
+          sectionId: chat.section_id,
+          durationMs: Date.now() - streamStart,
+        });
         // Save assistant message
         await createMessage(chatId, 'assistant', text);
 
