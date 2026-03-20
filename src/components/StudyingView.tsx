@@ -139,80 +139,143 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold text-primary-text mb-4 px-1">{t.studying.topicsTitle}</h2>
-        {/* Topic Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {topics.map((topic, idx) => (
-            <Card
-              key={topic.id}
-              clickable
-              className={`relative overflow-hidden group transition-all duration-300 ${
-                topic.is_completed ? 'opacity-60 hover:opacity-100 bg-surface/40' : 'bg-surface hover:shadow-md'
-              }`}
-              onClick={() => router.push(`/sections/${sectionId}/chat/${topic.chat_id}`)}
-              style={{ padding: '1.25rem' }}
-            >
-              <div className="flex items-start gap-4">
-                {/* Number/Icon */}
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 transition-colors ${topic.is_completed ? 'bg-accent-blue/20 text-accent-blue' : 'bg-white/5 text-muted-text group-hover:bg-white/10 group-hover:text-primary-text'}`}>
-                  {topic.is_completed ? <CheckIcon size={20} /> : <span className="font-semibold text-sm">{idx + 1}</span>}
-                </div>
-                
-                {/* Content */}
-                <div className="flex-1 min-w-0 pr-8">
-                  <h3 className={`text-[15px] font-semibold mb-1.5 leading-snug transition-colors ${topic.is_completed ? 'text-muted-text' : 'text-primary-text group-hover:text-accent-blue'}`}>
-                    {topic.title}
-                  </h3>
+        <h2 className="text-xl font-bold text-primary-text mb-6 px-2">{t.studying.topicsTitle}</h2>
+        
+        {/* Topic Timeline */}
+        <div className="relative pb-4">
+          {/* Connecting Vertical Line (Desktop only) */}
+          <div className="absolute left-[2.25rem] top-8 bottom-8 w-[2px] bg-border-subtle hidden md:block" />
+
+          <div className="space-y-6">
+            {topics.map((topic, idx) => {
+              const isNextToStudy = !topic.is_completed && (idx === 0 || topics[idx - 1]?.is_completed);
+
+              return (
+                <div key={topic.id} className="relative flex items-stretch gap-4 md:gap-8 group">
                   
-                  {/* Interactions */}
-                  <div className="flex items-center gap-1.5 text-xs text-muted-text">
-                    <ChatBubbleIcon size={14} className="opacity-70" />
-                    <span className="font-medium">
-                      {topic.message_count > 0
-                        ? `${topic.message_count} ${t.studying.interactions}`
-                        : t.studying.noInteractions}
-                    </span>
+                  {/* Timeline Node (Desktop) */}
+                  <div className="relative z-10 hidden md:flex flex-col items-center mt-6">
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-full border-4 border-background shrink-0 transition-all duration-300 shadow-sm ${
+                      topic.is_completed 
+                        ? 'bg-accent-blue text-background' 
+                        : isNextToStudy 
+                          ? 'bg-surface border-accent-blue/30 text-accent-blue shadow-[0_0_15px_rgba(49,130,206,0.25)]' 
+                          : 'bg-surface text-muted-text border-border-subtle/40'
+                    }`}>
+                      {topic.is_completed ? <CheckIcon size={20} /> : <span className="font-bold">{idx + 1}</span>}
+                    </div>
+                  </div>
+
+                  {/* Content Card */}
+                  <Card
+                    clickable
+                    className={`flex-1 relative overflow-hidden transition-all duration-300 ${
+                      topic.is_completed 
+                        ? 'opacity-70 hover:opacity-100 bg-surface/40' 
+                        : isNextToStudy
+                          ? 'bg-surface border-accent-blue/40 shadow-md hover:shadow-lg hover:border-accent-blue/60'
+                          : 'bg-surface hover:shadow-md hover:border-border-subtle/80'
+                    }`}
+                    onClick={() => router.push(`/sections/${sectionId}/chat/${topic.chat_id}`)}
+                    style={{ padding: '1.5rem' }}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Mobile Node */}
+                      <div className={`md:hidden flex items-center justify-center w-10 h-10 rounded-full shrink-0 transition-colors ${
+                        topic.is_completed ? 'bg-accent-blue text-background' : isNextToStudy ? 'bg-accent-blue/10 text-accent-blue' : 'bg-surface border border-border-subtle text-muted-text'
+                      }`}>
+                        {topic.is_completed ? <CheckIcon size={16} /> : <span className="font-bold text-sm">{idx + 1}</span>}
+                      </div>
+
+                      <div className="flex-1 min-w-0 pr-10">
+                        {/* Topic Title */}
+                        <h3 className={`text-lg font-bold mb-3 leading-snug transition-colors ${
+                          topic.is_completed ? 'text-primary-text' : isNextToStudy ? 'text-accent-blue' : 'text-primary-text'
+                        }`}>
+                          {topic.title}
+                        </h3>
+                        
+                        {/* Subtopics List */}
+                        {topic.subtopics && topic.subtopics.length > 0 && (
+                          <div className="mb-5 space-y-2.5">
+                            {topic.subtopics.map((sub) => (
+                              <div key={sub.id} className="flex items-start gap-3 text-sm text-muted-text group-hover:text-primary-text/80 transition-colors">
+                                <div className={`mt-2 w-1.5 h-1.5 rounded-full shrink-0 ${topic.is_completed ? 'bg-accent-blue/50' : 'bg-border-subtle'}`} />
+                                <span className="leading-relaxed line-clamp-2 font-medium">{sub.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Interactions Footer */}
+                        <div className="flex items-center gap-2 text-xs text-muted-text font-semibold bg-background/60 inline-flex px-3 py-1.5 rounded-full">
+                          <ChatBubbleIcon size={14} className="opacity-70" />
+                          <span>
+                            {topic.message_count > 0
+                              ? `${topic.message_count} ${t.studying.interactions}`
+                              : t.studying.noInteractions}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Checkbox Action */}
+                      <div
+                        className="absolute top-6 right-6 p-2 -m-2 cursor-pointer transition-transform active:scale-90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggle(topic.id);
+                        }}
+                      >
+                        <Checkbox checked={topic.is_completed} readOnly />
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              );
+            })}
+            
+            {/* Revision Node embedded in Timeline */}
+            {revisionChatId && (
+              <div className="relative flex items-stretch gap-4 md:gap-8 group">
+                
+                {/* Timeline Node (Desktop) */}
+                <div className="relative z-10 hidden md:flex flex-col items-center mt-6">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full border-4 border-background shrink-0 transition-all duration-300 shadow-sm bg-surface text-muted-text border-border-subtle/40">
+                    <SparklesIcon size={20} />
                   </div>
                 </div>
 
-                {/* Checkbox wrapper */}
-                <div
-                  className="absolute top-4 right-4 p-1 cursor-pointer transition-transform active:scale-95"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggle(topic.id);
-                  }}
+                {/* Content Card */}
+                <Card
+                  clickable
+                  className="flex-1 relative overflow-hidden transition-all duration-300 bg-surface hover:shadow-md hover:border-border-subtle/80"
+                  onClick={() => router.push(`/sections/${sectionId}/chat/${revisionChatId}`)}
+                  style={{ padding: '1.5rem' }}
                 >
-                  <Checkbox checked={topic.is_completed} readOnly />
-                </div>
+                  <div className="flex items-start gap-4">
+                    {/* Mobile Node */}
+                    <div className="md:hidden flex items-center justify-center w-10 h-10 rounded-full shrink-0 transition-colors bg-surface border border-border-subtle text-muted-text">
+                      <SparklesIcon size={16} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      {/* Title */}
+                      <h3 className="text-lg font-bold mb-2 leading-snug transition-colors text-primary-text group-hover:text-accent-blue">
+                        {t.studying.revision}
+                      </h3>
+                      
+                      {/* Description */}
+                      <p className="text-sm text-muted-text leading-relaxed">
+                        {t.studying.revisionDescription}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
               </div>
-            </Card>
-          ))}
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Revision Card */}
-      {revisionChatId && (
-        <Card
-          clickable
-          className="relative overflow-hidden border-accent-blue/30 bg-gradient-to-br from-surface via-surface to-accent-blue/10 hover:border-accent-blue/60 transition-all duration-300 shadow-sm"
-          onClick={() => router.push(`/sections/${sectionId}/chat/${revisionChatId}`)}
-          style={{ padding: '1.5rem', marginTop: '3rem' }}
-        >
-          <div className="flex items-center gap-5">
-             <div className="flex items-center justify-center w-14 h-14 rounded-full bg-accent-blue/10 text-accent-blue shrink-0 shadow-[0_0_20px_rgba(49,130,206,0.15)] overflow-hidden relative">
-               <div className="absolute inset-0 bg-accent-blue/20 animate-pulse"></div>
-               <SparklesIcon size={24} className="relative z-10" />
-             </div>
-             <div>
-               <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
-                 <h3 className="text-[17px] font-bold text-primary-text">{t.studying.revision}</h3>
-               </div>
-               <p className="text-sm text-muted-text leading-relaxed">{t.studying.revisionDescription}</p>
-             </div>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }
