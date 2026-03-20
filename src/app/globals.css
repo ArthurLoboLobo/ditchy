@@ -38,6 +38,7 @@ body {
   background: var(--background);
   color: var(--primary-text);
   font-family: var(--font-sans), sans-serif;
+  font-weight: 500;
 }
 
 /* Chat markdown prose styles */
