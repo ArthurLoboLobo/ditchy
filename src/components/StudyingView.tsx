@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 import Card from '@/components/ui/Card';
@@ -36,7 +36,7 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
   const [revisionChatId, setRevisionChatId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const inFlightToggles = useRef<Set<string>>(new Set());
 
   async function fetchTopics() {
     setLoading(true);
@@ -60,27 +60,37 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
   }, [sectionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleToggle(topicId: string) {
-    if (togglingId) return;
-    setTogglingId(topicId);
+    if (inFlightToggles.current.has(topicId)) return;
+
+    const topic = topics.find((t) => t.id === topicId);
+    if (!topic) return;
+
+    const optimisticCompleted = !topic.is_completed;
+    inFlightToggles.current.add(topicId);
+
+    setTopics((prev) =>
+      prev.map((t) => (t.id === topicId ? { ...t, is_completed: optimisticCompleted } : t)),
+    );
+    setProgress((prev) => ({
+      ...prev,
+      completed: prev.completed + (optimisticCompleted ? 1 : -1),
+    }));
+
     try {
       const res = await fetch(`/api/topics/${topicId}`, { method: 'PATCH' });
       if (!res.ok) throw new Error();
-      const data = await res.json();
-
+    } catch {
+      // Revert on failure
       setTopics((prev) =>
-        prev.map((topic) =>
-          topic.id === topicId ? { ...topic, is_completed: data.isCompleted } : topic,
-        ),
+        prev.map((t) => (t.id === topicId ? { ...t, is_completed: topic.is_completed } : t)),
       );
-
       setProgress((prev) => ({
         ...prev,
-        completed: prev.completed + (data.isCompleted ? 1 : -1),
+        completed: prev.completed + (optimisticCompleted ? -1 : 1),
       }));
-    } catch {
       showToast(t.errors.UNKNOWN);
     } finally {
-      setTogglingId(null);
+      inFlightToggles.current.delete(topicId);
     }
   }
 
@@ -140,14 +150,7 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
                 handleToggle(topic.id);
               }}
             >
-              {togglingId === topic.id ? (
-                <Spinner size={14} />
-              ) : (
-                <Checkbox
-                  checked={topic.is_completed}
-                  readOnly
-                />
-              )}
+              <Checkbox checked={topic.is_completed} readOnly />
             </div>
           </div>
         </Card>

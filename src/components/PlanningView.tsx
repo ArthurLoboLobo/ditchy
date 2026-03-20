@@ -77,8 +77,10 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
   }, [sectionId]);
 
   const savePlan = useCallback(
-    async (newPlan: PlanJSON): Promise<boolean> => {
-      setSaving(true);
+    async (newPlan: PlanJSON): Promise<void> => {
+      const previousPlan = plan;
+      setPlan(newPlan);
+      draftCountRef.current += 1;
       try {
         const res = await fetch(`/api/sections/${sectionId}/plan`, {
           method: 'PUT',
@@ -86,20 +88,17 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
           body: JSON.stringify({ plan: newPlan }),
         });
         if (!res.ok) {
+          setPlan(previousPlan);
+          draftCountRef.current -= 1;
           setInlineError(t.planning.saveFailed);
-          return false;
         }
-        setPlan(newPlan);
-        draftCountRef.current += 1;
-        return true;
       } catch {
+        setPlan(previousPlan);
+        draftCountRef.current -= 1;
         setInlineError(t.planning.saveFailed);
-        return false;
-      } finally {
-        setSaving(false);
       }
     },
-    [sectionId, t],
+    [sectionId, t, plan],
   );
 
   async function handleUndo() {

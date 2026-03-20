@@ -48,7 +48,6 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
   const [startingPlan, setStartingPlan] = useState(false);
   const [previewFile, setPreviewFile] = useState<LocalFile | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LocalFile | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -188,18 +187,19 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      if (deleteTarget.id) {
-        const res = await fetch(`/api/files/${deleteTarget.id}`, { method: 'DELETE' });
-        if (!res.ok) return;
+    const deletedFile = deleteTarget;
+
+    setFiles((prev) => prev.filter((f) => f.tempId !== deletedFile.tempId));
+    setDeleteTarget(null);
+
+    if (deletedFile.id) {
+      try {
+        const res = await fetch(`/api/files/${deletedFile.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+      } catch {
+        setFiles((prev) => [...prev, deletedFile]);
+        showToast(t.errors.UNKNOWN);
       }
-      setFiles((prev) => prev.filter((f) => f.tempId !== deleteTarget.tempId));
-      setDeleteTarget(null);
-    } catch {
-      // keep dialog open on error
-    } finally {
-      setDeleting(false);
     }
   }
 
@@ -228,7 +228,7 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <Spinner size={28} />
-        <p className="text-sm text-muted-text">{t.uploading.startPlanning}...</p>
+        <p className="text-sm text-muted-text">{t.planning.loading}</p>
       </div>
     );
   }
@@ -376,7 +376,6 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
         message={t.uploading.deleteConfirmMessage}
         confirmLabel={t.uploading.confirm}
         cancelLabel={t.uploading.cancel}
-        loading={deleting}
       />
     </div>
   );
