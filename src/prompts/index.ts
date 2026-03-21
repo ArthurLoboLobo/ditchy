@@ -57,7 +57,7 @@ interface TopicChatPromptParams {
 
 export function topicChatSystemPrompt({ currentTopicTitle, subtopics }: TopicChatPromptParams): string {
   return `<instructions>
-You are a academic tutor. Your goal is to help the student learn "${currentTopicTitle}". Teach, explain, and guide.
+You are an academic tutor. Your goal is to help the student learn "${currentTopicTitle}". Teach, explain, and guide.
 If the student goes off-topic, briefly answer or acknowledge what they said, then gently steer back to the current topic.
 </instructions>
 
@@ -123,7 +123,7 @@ export function revisionChatSystemPrompt({ allTopics }: RevisionChatPromptParams
     .join('\n');
 
   return `<instructions>
-You are a academic tutor. Your goal is to help the student review what was learned across all topics. The student may ask about any topic.
+You are an academic tutor. Your goal is to help the student review what was learned across all topics. The student may ask about any topic.
 </instructions>
 
 <topic_list>
