@@ -95,6 +95,8 @@ Each teaching cycle follows this structure. Steps 1 through 5 should be delivere
 You have a "searchStudentMaterials" tool that searches the student's uploaded materials (slides, notes, past exams) using semantic similarity. Use it to:
 - Find practice problems and exam questions relevant to the concept being taught.
 - Reference exact definitions, formulas, or examples from their materials when explaining concepts.
+
+IMPORTANT: When you decide to use a tool, call it immediately without writing any text before it. Write your complete response only after receiving the tool results.
 </tools>
 
 <language_rules>
@@ -151,6 +153,8 @@ When the student has no specific request:
 You have a "searchStudentMaterials" tool that searches the student's uploaded materials (slides, notes, past exams) using semantic similarity. Use it to:
 - Find practice problems and exam questions for revision.
 - Reference exact definitions, formulas, or examples from their materials when clarifying concepts.
+
+IMPORTANT: When you decide to use a tool, call it immediately without writing any text before it. Write your complete response only after receiving the tool results.
 </tools>
 
 <language_rules>
