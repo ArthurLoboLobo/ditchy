@@ -21,12 +21,11 @@ import { cookies } from 'next/headers';
 
 function buildSystemPrompt(
   chat: { type: string; section_name: string; topic_title: string | null },
-  allTopics: { title: string; is_completed: boolean; subtopics: { text: string }[] }[],
+  allTopics: { title: string; subtopics: { text: string }[] }[],
   currentSubtopics?: string[],
 ): string {
   const topicData = allTopics.map((t) => ({
     title: t.title,
-    isCompleted: t.is_completed,
     subtopics: t.subtopics.map((s) => s.text),
   }));
 
