@@ -7,5 +7,5 @@ export const TOP_N_CHUNKS = 4;
 export const TEACHING_CHAT_MODEL = 'gemini-3-flash-preview';
 export const SUMMARIZATION_MODEL = 'gemini-3-flash-preview';
 export const SUMMARIZATION_TOKEN_THRESHOLD = 30000;
-export const MIN_UNSUMMARIZED_MESSAGES = 2;
+export const MIN_UNSUMMARIZED_MESSAGES = 5;
 export const RATE_LIMIT_MESSAGES_PER_MINUTE = 10;

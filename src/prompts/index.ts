@@ -167,14 +167,22 @@ You have a "searchStudentMaterials" tool that searches the student's uploaded ma
 </formatting>`;
 }
 
-export const CHAT_SUMMARIZATION_PROMPT = `You are a conversation summarizer for a tutoring chat. Produce a concise cumulative summary of the conversation so far, preserving:
-- Key concepts that were discussed and explained
-- Questions the student asked and whether they were resolved
-- The student's current level of understanding per subtopic
-- Any practice questions given and whether the student answered correctly
-- Where the conversation left off (which subtopic, what was being discussed)
+export const CHAT_SUMMARIZATION_PROMPT = `You are summarizing a tutoring conversation so that the tutor can continue teaching seamlessly without the original messages. The summary must contain everything the tutor needs to pick up exactly where the conversation left off.
 
-If a previous summary is provided, incorporate it into the new summary rather than starting from scratch. Keep the summary concise but complete enough that a tutor could continue the conversation seamlessly.`;
+Include the following:
+
+1. **Concepts already explained**: List each concept that was taught and a one-line note on how it was explained.
+2. **Problems given**: List every problem that was given to the student, noting:
+   - The problem statement (brief)
+   - Whether the student solved it correctly, needed hints, or had it solved for them
+   - Key mistakes the student made, if any
+3. **Current teaching position**: What concept or step in the teaching cycle the conversation was on when it stopped.
+4. **Unanswered questions**: Any question the student asked that was not yet fully addressed.
+5. **Other relevant information**: Any other information that might help the tutor continue teaching.
+
+If a previous summary is provided in <previous_summary> tags, incorporate its information into the new summary — do not discard it. Update any points that have changed based on the new messages.
+
+Keep the summary concise and factual. Do not include conversational filler or greetings — only information that helps the tutor continue teaching.`;
 
 export const TOPIC_CHAT_INITIAL_USER_MESSAGE_PT = `Esta é uma mensagem de sistema para gerar a saudação inicial do chat. O estudante NÃO vê esta mensagem. Na sua resposta, faça o seguinte:
 1. Cumprimente o estudante brevemente.
