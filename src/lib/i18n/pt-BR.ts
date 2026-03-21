@@ -124,6 +124,7 @@ export interface Translations {
     undoConfirmMessage: string;
     undoConfirmButton: string;
     undoCancelButton: string;
+    searchingMaterials: string;
   };
   errors: {
     EMAIL_INVALID: string;
@@ -271,6 +272,7 @@ const ptBR: Translations = {
     undoConfirmMessage: 'Isso removerá esta mensagem e todas as mensagens seguintes. Essa ação não pode ser desfeita.',
     undoConfirmButton: 'Desfazer',
     undoCancelButton: 'Cancelar',
+    searchingMaterials: 'Buscando nos seus materiais',
   },
   errors: {
     EMAIL_INVALID: 'E-mail inválido.',

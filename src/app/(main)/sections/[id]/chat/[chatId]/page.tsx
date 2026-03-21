@@ -213,8 +213,12 @@ export default function ChatPage() {
         {messages.map((message) => {
           const textParts = message.parts?.filter((p) => p.type === 'text') ?? [];
           const textContent = textParts.map((p) => ('text' in p ? p.text : '')).join('');
+          const hasToolCall = message.role === 'assistant' && message.parts?.some(
+            (p) => typeof p.type === 'string' && p.type.startsWith('tool-'),
+          );
+          const showToolIndicator = hasToolCall && !textContent;
 
-          if (!textContent) return null;
+          if (!textContent && !showToolIndicator) return null;
 
           if (message.role === 'user') {
             return (
@@ -246,35 +250,51 @@ export default function ChatPage() {
           return (
             <div key={message.id} className="flex justify-start">
               <div className="max-w-[95%] text-[15px] leading-relaxed text-primary-text prose-chat">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                  components={{
-                    code({ className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || '');
-                      const codeString = String(children).replace(/\n$/, '');
-                      if (match) {
+                {textContent && (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={{
+                      code({ className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        const codeString = String(children).replace(/\n$/, '');
+                        if (match) {
+                          return (
+                            <SyntaxHighlighter
+                              style={oneDark}
+                              language={match[1]}
+                              PreTag="div"
+                              customStyle={{ borderRadius: '0.75rem', fontSize: '0.8125rem', margin: '1rem 0' }}
+                            >
+                              {codeString}
+                            </SyntaxHighlighter>
+                          );
+                        }
                         return (
-                          <SyntaxHighlighter
-                            style={oneDark}
-                            language={match[1]}
-                            PreTag="div"
-                            customStyle={{ borderRadius: '0.75rem', fontSize: '0.8125rem', margin: '1rem 0' }}
-                          >
-                            {codeString}
-                          </SyntaxHighlighter>
+                          <code className="bg-white/10 px-1.5 py-0.5 rounded-md text-[0.8125rem]" {...props}>
+                            {children}
+                          </code>
                         );
-                      }
-                      return (
-                        <code className="bg-white/10 px-1.5 py-0.5 rounded-md text-[0.8125rem]" {...props}>
-                          {children}
-                        </code>
-                      );
-                    },
-                  }}
-                >
-                  {textContent.replace(/\$\$([\s\S]*?)\$\$/g, (_, content) => `\n$$\n${content.trim()}\n$$\n`)}
-                </ReactMarkdown>
+                      },
+                    }}
+                  >
+                    {textContent.replace(/\$\$([\s\S]*?)\$\$/g, (_, content) => `\n$$\n${content.trim()}\n$$\n`)}
+                  </ReactMarkdown>
+                )}
+                {showToolIndicator && (
+                  <div className="flex items-center gap-2 text-muted-text text-sm mt-2 animate-fade-in-up">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <span>{t.chat.searchingMaterials}</span>
+                    <span className="flex gap-0.5">
+                      <span className="pulsing-dot w-1 h-1 rounded-full bg-muted-text inline-block" />
+                      <span className="pulsing-dot w-1 h-1 rounded-full bg-muted-text inline-block" />
+                      <span className="pulsing-dot w-1 h-1 rounded-full bg-muted-text inline-block" />
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           );

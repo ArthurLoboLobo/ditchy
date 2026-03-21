@@ -130,6 +130,7 @@ const en: Translations = {
     undoConfirmMessage: 'This will remove this message and all subsequent messages. This action cannot be undone.',
     undoConfirmButton: 'Undo',
     undoCancelButton: 'Cancel',
+    searchingMaterials: 'Searching your materials',
   },
   errors: {
     EMAIL_INVALID: 'Invalid email.',
