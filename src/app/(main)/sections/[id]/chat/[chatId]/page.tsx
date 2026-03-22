@@ -176,6 +176,14 @@ export default function ChatPage() {
       }
       setInputValue(content);
       setUndoTargetId(null);
+      
+      // Auto-resize textarea after state update
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+        }
+      }, 0);
     } catch {
       showToast(t.chat.undoError, 'error');
       setUndoTargetId(null);
@@ -232,7 +240,7 @@ export default function ChatPage() {
               >
                 {/* Invisible bridge to keep hover active between bubble and undo button */}
                 {canUndo && hoveredMessageId === message.id && (
-                  <div className="absolute top-0 -bottom-10 left-0 right-0 z-0" />
+                  <div className="absolute top-0 -bottom-8 left-0 right-0 z-0" />
                 )}
                 
                 <div className="bg-surface rounded-3xl px-5 py-3 max-w-[85%] shadow-sm relative z-10">
@@ -242,14 +250,13 @@ export default function ChatPage() {
                 {canUndo && hoveredMessageId === message.id && (
                   <button
                     onClick={() => setUndoTargetId(message.id)}
-                    className="absolute -bottom-7 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full text-[12px] text-muted-text hover:text-primary-text hover:bg-surface-hover/80 cursor-pointer animate-fade-in-up z-0 transition-colors"
+                    className="absolute -bottom-8 right-2 p-1.5 rounded-full text-muted-text opacity-70 hover:opacity-100 hover:text-primary-text hover:bg-surface-hover/80 cursor-pointer animate-fade-in-up z-0 transition-all shadow-sm"
                     title={t.chat.undo}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 14 4 9l5-5"/>
                       <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
                     </svg>
-                    <span className="font-medium tracking-wide">{t.chat.undo}</span>
                   </button>
                 )}
               </div>
