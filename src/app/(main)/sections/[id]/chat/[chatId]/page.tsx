@@ -221,28 +221,37 @@ export default function ChatPage() {
           if (!textContent && !showToolIndicator) return null;
 
           if (message.role === 'user') {
+            const canUndo = Number(message.id) > summarizedUpToMessageId && !isLoading;
+            
             return (
               <div
                 key={message.id}
-                className="flex justify-end group"
+                className="flex flex-col items-end group relative mb-10"
                 onMouseEnter={() => setHoveredMessageId(message.id)}
                 onMouseLeave={() => setHoveredMessageId(null)}
               >
-                {hoveredMessageId === message.id && Number(message.id) > summarizedUpToMessageId && !isLoading && (
-                  <button
-                    onClick={() => setUndoTargetId(message.id)}
-                    className="self-center mr-2 p-1 rounded text-muted-text hover:text-primary-text hover:bg-white/5 cursor-pointer"
-                    title="Undo"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="1 4 1 10 7 10" />
-                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                    </svg>
-                  </button>
+                {/* Invisible bridge to keep hover active between bubble and undo button */}
+                {canUndo && hoveredMessageId === message.id && (
+                  <div className="absolute top-0 -bottom-10 left-0 right-0 z-0" />
                 )}
-                <div className="bg-surface rounded-3xl px-5 py-3 max-w-[85%] shadow-sm">
+                
+                <div className="bg-surface rounded-3xl px-5 py-3 max-w-[85%] shadow-sm relative z-10">
                   <p className="text-[15px] leading-relaxed text-primary-text whitespace-pre-wrap">{textContent}</p>
                 </div>
+                
+                {canUndo && hoveredMessageId === message.id && (
+                  <button
+                    onClick={() => setUndoTargetId(message.id)}
+                    className="absolute -bottom-7 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full text-[12px] text-muted-text hover:text-primary-text hover:bg-surface-hover/80 cursor-pointer animate-fade-in-up z-0 transition-colors"
+                    title={t.chat.undo}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 14 4 9l5-5"/>
+                      <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
+                    </svg>
+                    <span className="font-medium tracking-wide">{t.chat.undo}</span>
+                  </button>
+                )}
               </div>
             );
           }

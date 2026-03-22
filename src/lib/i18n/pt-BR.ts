@@ -124,6 +124,7 @@ export interface Translations {
     undoConfirmMessage: string;
     undoConfirmButton: string;
     undoCancelButton: string;
+    undo: string;
     searchingMaterials: string;
   };
   errors: {
@@ -272,6 +273,7 @@ const ptBR: Translations = {
     undoConfirmMessage: 'Isso removerá esta mensagem e todas as mensagens seguintes. Essa ação não pode ser desfeita.',
     undoConfirmButton: 'Desfazer',
     undoCancelButton: 'Cancelar',
+    undo: 'Desfazer',
     searchingMaterials: 'Buscando nos seus materiais',
   },
   errors: {
