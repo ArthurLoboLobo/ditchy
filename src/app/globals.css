@@ -108,3 +108,15 @@ body {
 .pulsing-dot:nth-child(1) { animation: pulsing-dots 1.4s infinite 0s; }
 .pulsing-dot:nth-child(2) { animation: pulsing-dots 1.4s infinite 0.2s; }
 .pulsing-dot:nth-child(3) { animation: pulsing-dots 1.4s infinite 0.4s; }
+
+@keyframes jumping-dots {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+.jumping-dot {
+  display: inline-block;
+  animation: jumping-dots 1s infinite ease-in-out;
+}
+.jumping-dot:nth-child(1) { animation-delay: 0s; }
+.jumping-dot:nth-child(2) { animation-delay: 0.15s; }
+.jumping-dot:nth-child(3) { animation-delay: 0.3s; }

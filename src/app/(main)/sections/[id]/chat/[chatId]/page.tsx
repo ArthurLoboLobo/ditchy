@@ -282,16 +282,16 @@ export default function ChatPage() {
                   </ReactMarkdown>
                 )}
                 {showToolIndicator && (
-                  <div className="flex items-center gap-2 text-muted-text text-sm mt-2 animate-fade-in-up">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <div className="flex items-center gap-2.5 text-muted-text text-[13px] mt-2 mb-1 animate-fade-in-up bg-surface/80 backdrop-blur-sm border border-border-subtle/50 px-3.5 py-2 rounded-full w-fit shadow-sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-accent-blue opacity-80">
                       <circle cx="11" cy="11" r="8" />
                       <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
-                    <span>{t.chat.searchingMaterials}</span>
-                    <span className="flex gap-0.5">
-                      <span className="pulsing-dot w-1 h-1 rounded-full bg-muted-text inline-block" />
-                      <span className="pulsing-dot w-1 h-1 rounded-full bg-muted-text inline-block" />
-                      <span className="pulsing-dot w-1 h-1 rounded-full bg-muted-text inline-block" />
+                    <span className="font-medium tracking-wide opacity-90">{t.chat.searchingMaterials}</span>
+                    <span className="flex gap-1 ml-0.5 items-center">
+                      <span className="jumping-dot w-1.5 h-1.5 rounded-full bg-accent-blue opacity-80" />
+                      <span className="jumping-dot w-1.5 h-1.5 rounded-full bg-accent-blue opacity-80" />
+                      <span className="jumping-dot w-1.5 h-1.5 rounded-full bg-accent-blue opacity-80" />
                     </span>
                   </div>
                 )}
