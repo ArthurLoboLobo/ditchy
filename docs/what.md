@@ -1,80 +1,112 @@
 # What is Ditchy?
-Ditchy is a platform that helps university students prepare for exams using AI. The main goal is to prepare for a specific exam, not for a subject as a whole.
 
-## User flow
+Ditchy is a platform that helps university students prepare for exams using AI. The goal is to prepare for a specific exam — not a subject as a whole. Users upload study materials, the AI generates a structured study plan, and then provides interactive tutoring through topic-specific chats.
+
+## User Flow
 
 ### Register / Login
-- The root page (`/`) serves as both the landing page and the login/register page.
-- The page includes general information about the platform (what it is, how it works) with the login/register form in the center.
-- Login and registration share a unified flow and form.
-- The user enters their email address to receive a one-time confirmation code.
-- After filling the email and confirming it, the form changes to show a confirmation code input.
-- After entering the correct code, the user is authenticated and redirected to the dashboard.
-- If the user is already logged in, they are redirected straight to the dashboard.
-- The user stays logged for 30 days across sessions.
+
+The root page (`/`) is both the landing page and the auth page. It has a hero section with a description of the platform on the left, and the auth form on the right.
+
+1. The user enters their email address.
+2. A one-time 6-digit code is sent via email.
+3. The form transitions to show a code input field.
+4. After entering the correct code, the user is authenticated and redirected to the dashboard.
+5. If the user is already logged in, they are redirected straight to the dashboard.
+6. Sessions last 30 days.
+7. A standalone language switcher (PT | EN) is at the top-right of the page since there is no navbar on the auth page.
+
+Below the hero section, three illustrated steps explain how the platform works (Upload → Plan → Study).
 
 ### Dashboard
-- The dashboard has a list of all the sections the user created in a grid (or a notice "No sections created yet, click _Create new Section_ to create one")
-- Above the section list, there is a search bar to filter sections by name, and a button to create a new section.
-- Each section is a card with:
-    - The section name and description
-    - The creation date
-    - A status badge showing the current status (Uploading, Planning, or Studying)
-    - A progress indicator (e.g., "3/8 topics completed") — only shown when the section is in the Studying status
-    - A delete button to permanently delete the section (with a confirmation dialog)
-- The user can click on a section to go to the section page
 
-### Section page
-- A section has 3 statuses: Uploading, Planning, and Studying
-- Each status has a different interface
-- When first entering the section page, the user is in the Uploading interface
+The dashboard shows all sections the user has created in a responsive grid (3 columns desktop, 2 medium, 1 small).
+
+- **Top bar**: Search input to filter sections by name + "Create new Section" button.
+- **Each section card** shows:
+  - Section name and description.
+  - Creation date.
+  - Status badge: Uploading, Planning, or Studying.
+  - Progress indicator (e.g., "3/8 topics completed") — only when status is Studying.
+  - Delete button (trash icon) that opens a confirmation dialog.
+- **Empty state**: A centered message guiding the user to create their first section.
+- **Create section**: Opens a modal with name and description fields.
+- Clicking a card navigates to the section page.
+
+### Section Page
+
+A section has three phases: **Uploading**, **Planning**, and **Studying**. Each phase has a completely different interface. The phase is determined by the section's `status` field.
 
 #### Uploading
-- The user can upload files from their computer
-- The files could be past exams, slides, notes, etc. Anything relevant to help the AI decide what to teach the user for the exam
-- The files will be used to create the study plan
-- A status will be shown next to each file: "Uploading" -> "Processing" -> "Processed"
-- The user can click on a file to preview it, and click a remove button to delete it from the section.
-- When all sent files are processed, the user can click on a button to start the planning process and no new files can be uploaded.
+
+The user uploads study materials — past exams, slides, notes, or anything relevant to help the AI understand what to teach.
+
+- **Upload zone**: Dashed-border area supporting drag-and-drop and click-to-browse. Visual feedback when dragging files over.
+- **File list**: Each uploaded file shows:
+  - File name (clickable to preview in a modal: PDF in iframe, images displayed, unsupported types show a message).
+  - Status: Uploading → Processing → Processed (or Error).
+  - Delete button.
+  - Retry button (for files with error status).
+- **Processing**: After upload, each file is automatically sent to the AI for text extraction. The client polls for status updates every 3 seconds.
+- **"Start Planning" button**: Only enabled when all files are processed and at least one file exists. Transitions the section to the Planning phase.
 
 #### Planning
-- The planning page will show a loading screen while the LLM is creating the study plan
-- A notice will appear saying that the study plan is being created
-- An LLM will analyze the files and create a study plan: a series of topics (each one with subtopics) that the user should study to prepare for the exam
-- The order matters: The order shown is the recommended order to study.
-- Each topic has a title and a list of subtopics describing what the user will study in this topic.
-- The study plan will be shown to the user
-- The user can edit the study plan in the following ways:
-    - Delete a topic: By clicking a trash button that appears when hovering over a topic card. When deleting a topic, all its subtopics will be deleted as well and the card will disappear from the interface.
-    - Delete a subtopic: By clicking a trash button that appears when hovering over a subtopic (each subtopic is a child of a topic and is inside the topic card).
-    - Edit a topic title: When hovering over the title, the user can click to edit the text in it.
-    - Edit a subtopic: When hovering over the text, the user can click to edit the text in it.
-    - Create a new topic: Below all the topics, there is a "+" button to create a new topic. By clicking it, a new empty topic will be created at the end. The user will edit the topic title and create subtopics.
-    - Create a new subtopic: By clicking a "+" button that appears below the last subtopic when hovering over a topic card. By clicking it, a new empty subtopic will be created at the end of the topic. The user will edit the subtopic text.
-    - Reorder topics: Users can drag and drop the topics to reorder them. On the left side of the card, there will be a small icon to drag and drop the whole card.
-    - Reorder subtopics: Users can drag and drop subtopics within a topic to reorder them.
-    - Mark as known: In the top right, there will be a small "Already Known" checkbox to click and mark the topic as known. The topics marked as "known" won't be excluded from the studying page (the next one); they will just start marked as completed, and the user can unmark them in the future if needed.
-    - Undo: The user can undo any editing action (deletes, edits, reorders, etc.) using an undo button at the top of the planning interface.
-- The user can click a "Regenerate Plan" button to have the AI create a new study plan from scratch. An inline text box appears for required guidance (e.g., "Focus more on calculus, less on statistics") — the confirm button is disabled until the user types something.
-- After finishing the edits, the user clicks "Start Studying" and the study plan can no longer be changed.
+
+The AI generates a study plan — a series of topics in recommended study order, each with subtopics describing what the student will learn.
+
+- **Loading state**: Spinner with a message while the plan generates.
+- **Plan editor** (shown after generation):
+  - Vertical list of topic cards.
+  - **Each topic card** has:
+    - Drag handle (left) for reordering topics.
+    - Topic title — click to edit inline.
+    - "Already Known" checkbox (top-right) — dims the card visually. These topics start as completed in the Studying phase.
+    - Delete button (appears on hover).
+    - List of subtopics — each is inline-editable, deletable (hover), and reorderable via drag-and-drop within the topic.
+    - "+" button below the last subtopic (appears on hover) to add a new subtopic.
+  - **"+" button** below all topics to add a new topic.
+  - **Undo button** (top-right): Reverts the last edit. Works for all actions: deletes, edits, reorders, creation, mark as known.
+  - **"Regenerate Plan" button**: Reveals an inline text box for required guidance (e.g., "Focus more on calculus, less on statistics"). The AI regenerates the plan based on the guidance, modifying the existing plan rather than starting from scratch. Old plan is kept in the undo stack.
+  - **"Start Studying" button**: Finalizes the plan. Creates topics, generates text embeddings for RAG, creates all chat rooms. The plan can no longer be changed after this.
 
 #### Studying
-- This is the main page of a section and the one that will be active for most of the time.
-- At the top, a progress indicator shows overall completion (e.g., "3/8 topics completed" with a progress bar).
-- It has a list of cards, each representing a topic.
-- Each topic has its own AI chat, where the student will enter the chat and talk with the LLM to learn the specific topic. Each chat is independent and has the only goal to make the user learn the topic.
-- The user can mark a topic as completed by clicking the checkbox in the top right corner of the topic card when he finished studying it (actually, he can mark/unmark as completed anytime, and it will visually show as completed or not completed).
-- When the user clicks on a topic card, the AI chat will open in another page (a chat-specific link). About the chat:
-    - When the user first enters the chat (or the chat just don't have any message yet), the initial message will be a message from the LLM introducing what will be learnt in this topic and asking the user confirmation to start teaching it.
-    - The chat is a standard AI chatbot interface, where the user can send messages and the LLM will respond.
-    - The LLM will have access to all the files the student uploaded to the section, and will use them to help the student learn the topic (for example, by using exam's questions as practice questions).
-    - When hovering over a message the user sent, an undo icon (↩) appears next to it. Clicking it returns the conversation to the point right before sending that message (the message content is placed back in the text box). Undo is only available for recent messages — older messages that have been rolled into a conversation summary can no longer be undone.
-    - The chat will be latex and markdown-formatted, and the LLM will use both to make their answer more readable.
-    - The pedagogical flow of a conversarion should be as follows:
-        - First, the LLM will introduce what will be learnt in this topic and ask for confirmation to start teaching it.
-        - For each subtopic, the LLM will first introduce it in a simple way, then go deeper into it. The LLM should contantly ask the user if he understood the concept before going deeper.
-        - After explaining a subtopic, the LLM should solve a problem that applies it.
-        - Then, the LLM should ask the user to solve another problem by himself. The user is welcome to ask the LLM for help if needed.
-        - After the user is ok with a subtopic, the LLM should ask if he wants to move to the next subtopic.
-        - After all subtopics are finished, the LLM will announce that the topic is finished and suggest the user to mark the topic as completed and move to the next topic, or keep practing more problems in the same chat.
-- Apart from the topic-specific chat, at the end of the list there will be a revision chat, where the user can ask the LLM more general questions about all the topics in the section, ask for new problems to solve, etc.
+
+This is the main phase and where the student spends most of their time.
+
+- **Progress widget**: Shows overall completion percentage, progress bar, and "X / Y topics completed".
+- **Topic timeline**: A vertical list of topic cards connected by a timeline line (desktop). Each topic has a numbered node:
+  - **Completed**: Blue filled node with checkmark, card is dimmed.
+  - **Next to study**: Blue-glowing node, card has accent border and shadow.
+  - **Other**: Neutral node.
+- **Each topic card** shows:
+  - Topic title and subtopics.
+  - Interaction count (number of user messages in this topic's chat).
+  - Completion checkbox (top-right) — toggleable at any time.
+- Clicking a topic card opens the AI chat for that topic.
+- **Revision chat**: A special card at the bottom (with sparkles icon) for general questions across all topics.
+
+### Chat
+
+When the user clicks a topic from the Studying page, they enter an AI chat specific to that topic.
+
+- **Initial message**: On first load, the AI introduces the topic and asks the user to confirm before starting.
+- **Message display**:
+  - User messages: Right-aligned in a bubble.
+  - AI messages: Left-aligned, no bubble, rendered with Markdown, LaTeX (inline `$...$` and block `$$...$$`), and syntax-highlighted code blocks.
+  - While the AI searches study materials (RAG), a "Searching study materials" indicator with animated dots appears.
+- **Undo**: On hover over a user message, an undo button (↩) appears. Clicking it reverts the conversation to before that message and places the text back in the input box. Undo is not available for messages that have been rolled into a conversation summary.
+- **Input area**: Auto-growing textarea. Enter sends, Shift+Enter for newlines. Send button next to the input. Disabled while AI is responding.
+- **Pedagogical flow**: The AI follows a structured teaching approach:
+  1. Introduces the concept simply, then goes deeper.
+  2. Asks if the student understood before proceeding.
+  3. Solves a worked example applying the concept.
+  4. Asks the student to solve a problem (offers help if needed).
+  5. After all subtopics: announces the topic is finished, suggests marking it complete and moving on.
+- **RAG**: The AI can search the student's uploaded materials to find relevant content, exam questions, etc.
+- **Rate limit**: Max 10 messages per minute. If exceeded, a message asks the student to wait.
+- **Revision chat**: Same interface, but for general questions across all topics in the section.
+
+### Navigation
+
+- **Navbar**: Fixed at the top. Logo "Ditchy" on the left (gradient text). Avatar button on the right that opens a dropdown with language switcher and logout.
+- **Breadcrumb**: Below the navbar. Shows: Dashboard > Section Name > Topic Name. Section and topic names have dropdowns for quick navigation to other sections/topics.

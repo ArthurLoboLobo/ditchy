@@ -1,125 +1,144 @@
-# Ditchy — UI & Design Specification
+# Ditchy — Design System
+
+## Design Philosophy
+
+Dark mode only. Gemini-inspired aesthetic with soft pastel colors, subtle depth through surface layering and backdrop blurs, and smooth micro-animations. No hard borders by default — borders are transparent or very subtle (`rgba(255, 255, 255, 0.08)`).
 
 ## Color Palette
 
-| Token            | Value     | Usage                          |
-| ---------------- | --------- | ------------------------------ |
-| Background       | `#191B1F` | Page background                |
-| Surface          | `#21242B` | Cards, modals, dropdowns       |
-| Border           | `#2D3140` | Card borders, dividers         |
-| Border Hover     | `#3A3F52` | Subtle lighter border on hover |
-| Primary Text     | `#E4E6EB` | Headings, body text            |
-| Muted Text       | `#8B90A0` | Secondary text, placeholders   |
-| Accent Blue      | `#2B5CE6` | Buttons, links, active states  |
-| Accent Blue Hover| `#3451D1` | Button hover                   |
-| Success Green    | `#3D8B5E` | Progress bars, completion      |
-| Danger Red       | `#D94444` | Delete buttons, destructive actions |
+| Token | Value | Usage |
+|-------|-------|-------|
+| Background | `#131314` | Page background |
+| Surface | `#1E1F20` | Cards, modals, dropdowns |
+| Surface Hover | `#282A2C` | Hover state for surfaces |
+| Border | `transparent` | Default — no visible borders |
+| Border Subtle | `rgba(255, 255, 255, 0.08)` | Card borders, dividers |
+| Border Hover | `rgba(255, 255, 255, 0.12)` | Hover border state |
+| Primary Text | `#E3E3E3` | Headings, body text |
+| Muted Text | `#C4C7C5` | Secondary text, placeholders |
+| Accent Blue | `#A2C7FF` | Buttons, links, active states (soft pastel blue) |
+| Accent Blue Hover | `#B4D1FF` | Button hover |
+| Accent Surface | `rgba(162, 199, 255, 0.1)` | Blue-tinted background |
+| Success Green | `#81C995` | Progress bars, completion |
+| Danger Red | `#F28B82` | Delete buttons, errors |
 
-Dark mode only. No light mode.
+Colors are defined as CSS variables in `src/app/globals.css` and exposed via Tailwind v4's `@theme inline` block. Available as utility classes: `bg-background`, `bg-surface`, `text-primary-text`, `text-accent-blue`, etc.
+
+## Background
+
+The body uses subtle fixed radial gradients for depth:
+- Blue gradient at 15% 50% position with 5% opacity.
+- Green gradient at 85% 30% position with 3% opacity.
 
 ## Typography
 
-- Font family: **Geist**
-- Keep sizing and weight minimal and consistent — headings use weight, not excessive size differences.
+- **Font**: Geist Sans (body), Geist Mono (code).
+- **Base weight**: 500.
+- **Headings**: Weight 600, minimal size differences.
+- **Body text**: 15px, leading-relaxed (1.6 line height).
+- **Small text**: 12–13px for labels, badges, timestamps.
+- **Color**: `primary-text` for main content, `muted-text` for secondary.
 
-## General Component Style
+## Component Styles
 
-- **Corners**: Slightly rounded (small border-radius, not pill-shaped).
-- **Cards**: Flat with `#2D3140` border, no shadow at rest. On hover: a very subtle shadow or slightly lighter border (`#3A3F52`) to indicate interactivity.
-- **Buttons**: Slightly rounded corners. Primary buttons use accent blue background. Destructive buttons use danger red.
-- **Modals**: Surface-colored overlay panel, centered, with a dimmed backdrop.
-- **Spinners**: Used for all loading states (no skeleton loaders).
-- **Animations**: None. Keep the UI static — no transitions or motion effects.
-- **Toasts/notifications**: None.
-- **Empty states**: All lists (sections, files, messages, etc.) should show a short notice when empty, guiding the user on what to do next (e.g., "No sections created yet. Click Create new Section to get started.").
+### Buttons
+- **Primary**: `bg-accent-blue`, `hover:bg-accent-blue-hover`, `text-background`. Rounded-full (pill shape).
+- **Danger**: `bg-danger-red`, `opacity-90 on hover`.
+- **Ghost**: Transparent, `hover:bg-surface-hover`.
+- Padding: `px-5 py-2.5`. Font: 14px, medium weight. Active: `scale-95` press effect. 200ms transitions.
+- Loading state with inline spinner. Disabled: `opacity-50`.
+
+### Inputs
+- `px-4 py-3`, `rounded-2xl`, 14px text.
+- Background: `surface` with `border-subtle`.
+- Focus: `accent-blue` border with ring.
+- Error state: `danger-red` border.
+- Disabled: `opacity-50`.
+
+### Cards
+- `bg-surface/60` with `backdrop-blur-sm`, `border border-border-subtle`, `rounded-2xl`, `p-5`.
+- Hover (clickable): `bg-surface-hover/80`, `border-accent-blue/30`, `shadow-lg`, `-translate-y-0.5`.
+- Shadow: `shadow-sm` at rest, `shadow-lg` on hover.
+- 300ms transitions.
+
+### Modals
+- Portal-based, `z-50`.
+- Backdrop: `bg-[#0F0F11]/80` with `backdrop-blur-sm`.
+- Content: `bg-surface`, `border border-border-subtle`, `rounded-3xl`, `p-6`, `shadow-2xl`.
+- Close: ESC key, click-outside, or X button.
+- Animations: backdrop fade + content pop.
+
+### Badges
+Variants: default (`bg-white/10`), blue (`bg-accent-blue/20`), green (`bg-success-green/20`), red (`bg-danger-red/20`), muted (`bg-white/5`). All are `rounded-full`, `text-xs`, `px-2.5 py-0.5`.
+
+### Checkboxes
+Custom styled: `w-4 h-4`, `rounded`, `border border-border-subtle`. Checked: `bg-accent-blue`. Focus: `ring-1 ring-accent-blue/30`.
+
+### Progress Bar
+`h-2` (or `h-3` in studying view), `bg-white/10` container, `bg-success-green` fill, both `rounded-full`.
+
+### Spinners
+SVG-based, `text-accent-blue`, `animate-spin`, partial circle effect.
+
+### Toasts
+Bottom-right, auto-dismiss (4 seconds). Variants:
+- Error: `bg-danger-red/10`, `border-danger-red/30`, `text-danger-red`.
+- Success: `bg-success-green/10`, `border-success-green/30`, `text-success-green`.
+- Info: `bg-white/5`, `border-border`, `text-muted-text`.
+Rounded-2xl with backdrop-blur. Dismiss button on each toast.
+
+## Animations
+
+Subtle micro-animations are used throughout:
+- **fade-in-up**: 0.4s cubic-bezier, `translateY(16px)` → 0. Used for messages, page sections.
+- **modal-pop**: 0.3s cubic-bezier, `scale(0.96)` → 1. Used for modal content.
+- **backdrop-fade**: 0.3s ease-out. Used for modal backdrop.
+- **jumping-dots**: 1s infinite, `translateY(-4px)`. Used for tool-use indicator in chat.
+- **pulsing-dots**: 1.4s infinite, opacity cycle. Used for loading indicators.
 
 ## Layout
 
-- **Max width**: Content area has a max width that uses almost all of the viewport, but not 100%. Centered horizontally.
-- **Mobile**: Primarily a desktop web app, but should be usable on mobile (responsive layout, no separate mobile design).
+### Navbar
+Fixed top, `h-14`, `bg-background/80` with `backdrop-blur-md`, `border-b border-border-subtle`.
+- Left: "Ditchy" logo with gradient text (primary-text → accent-blue).
+- Right: Avatar button (circle, `bg-white/10`) → dropdown menu (`bg-surface`, `rounded-2xl`).
 
-## Navigation
+### Breadcrumb
+Fixed below navbar, `h-12`, same blur styling. Shows: Dashboard > Section > Topic. Section and topic names have navigation dropdowns.
 
-### Top Navbar
-- Slim, fixed at the top.
-- **Left side**: Logo (placeholder: text "Ditchy" for now; a logo icon will be placed next to it later).
-- **Right side**: Profile avatar.
-  - Clicking the avatar opens a dropdown menu containing:
-    - **Change Language** — clicking it reveals the language options inline within the dropdown.
-    - **Logout**
+### Content Area
+`pt-22` (accounts for fixed navbar + breadcrumb), `max-w-7xl`, centered horizontally.
 
-### Breadcrumb Bar
-- Positioned below the navbar.
-- Shows the current location and acts as a navigator.
-- Format: `Dashboard > [Section Name ▾] > [Topic Name ▾]`
-- Clicking `▾` next to a section name opens a simple dropdown listing all the user's sections to jump to.
-- Clicking `▾` next to a topic name opens a simple dropdown listing all topics in that section (regardless of completion), to jump directly to any topic's chat.
-- Dropdowns are simple text lists — no extra info like badges or status.
+### Responsive
+Desktop-first with responsive breakpoints. Dashboard grid: 3 → 2 → 1 columns. Topic timeline: vertical line hidden on mobile, smaller nodes.
 
-## Page-Specific UI
+## Page-Specific Design
 
-### Dashboard
+### Auth Page
+- Hero: large title (5xl/7xl) with gradient text, tagline in accent-blue, description in muted-text.
+- Form: `bg-surface/80`, `backdrop-blur-xl`, `rounded-3xl`, prominent shadow.
+- Three-step explanation section below with staggered fade-in-up animations.
 
-- **Top area**: Search bar (left) + "Create new Section" button (right).
-- **Section grid**: 3 columns by default, responsive (fewer columns on smaller screens).
-- **Section card** contains:
-  - Section name and description
-  - Creation date
-  - Status badge: `Uploading`, `Planning`, or `Studying`
-  - Progress indicator (e.g., "3/8 topics completed") — only shown when status is `Studying`
-  - Delete button — triggers a confirmation modal ("Are you sure?" with Cancel and Confirm buttons)
-- Clicking a card navigates to the section page.
+### Uploading
+- Upload zone: dashed border, `rounded-3xl`, drag state highlights with `border-accent-blue` and `scale-[1.02]`.
+- File rows: `bg-surface`, `rounded-2xl`, with status badges.
 
-### Section — Uploading
+### Planning
+- Topic cards: `bg-surface`, `rounded-3xl`, `p-5`. Known topics: `opacity-50`.
+- Inline editing: transparent input with accent-blue bottom border.
+- Drag handles and add/delete buttons appear on hover.
 
-- **File upload zone**: Dashed border area. Supports drag-and-drop. Clicking the zone also opens the system file picker.
-- **File list**: Each uploaded file shows:
-  - File name
-  - Status label: `Uploading` → `Processing` → `Processed`
-  - Click to preview the file (opens in a **modal overlay**)
-  - Remove button to delete the file from the section
-- **"Start Planning" button**: Appears when all uploaded files are processed. Clicking it transitions the section to the Planning status and disables further uploads.
+### Studying
+- Progress widget: `bg-surface/60`, `backdrop-blur-md`, `rounded-[32px]`.
+- Timeline: vertical connecting line, numbered circle nodes with state-dependent styling (completed blue, next-to-study glowing blue, others neutral).
+- Topic cards show subtopics as dot-listed items.
 
-### Section — Planning
+### Chat
+- User messages: `bg-surface`, `rounded-3xl`, right-aligned bubble.
+- AI messages: no bubble, left-aligned, rendered as prose (Markdown + LaTeX + code highlighting).
+- Tool indicator: "Searching study materials" with jumping dots.
+- Input: fixed bottom, `bg-surface/80`, `backdrop-blur-xl`, `rounded-[32px]`, gradient fade above.
+- Send button: `rounded-full`, `bg-accent-blue`.
 
-- **Loading state**: A spinner with a notice ("Creating your study plan...") while the LLM generates the plan. No progress bar (plan generation is a single AI call).
-- **Study plan display**: A vertical list of topic cards, each always showing all its subtopics (no collapse/expand).
-- **Topic card**:
-  - Drag handle on the left side for reordering.
-  - Topic title — editable on click (appears when hovering over the title).
-  - "Already Known" checkbox in the top-right corner. Marking it dims the entire card visually (same appearance as completed topics in the Studying phase — they start as completed).
-  - Trash button — appears on hover over the card. Deletes the topic and all its subtopics.
-  - Subtopics listed inside the card:
-    - Each subtopic text is editable on click (appears when hovering).
-    - Trash button on each subtopic — appears on hover.
-    - Subtopics are reorderable via drag-and-drop within their parent topic.
-    - "+" button below the last subtopic — appears on hover over the card. Creates a new empty subtopic at the end.
-- **"+" button** below all topic cards: Creates a new empty topic at the end of the list.
-- **Undo button**: Positioned at the top-right, just above the plan. Applies to all editing actions (deletes, edits, reorders, creation, etc.). No redo.
-- **"Regenerate Plan" button**: Below the plan or in a prominent position. Clicking it reveals a required guidance text box **inline below the button**. The confirm button is disabled until the user types something (e.g., "Focus more on calculus").
-- **"Start Studying" button**: Finalizes the plan and transitions the section to the Studying status.
-
-### Section — Studying
-
-- **Top area**: Progress indicator showing overall completion (e.g., "3/8 topics completed") with a progress bar using `#3D8B5E` green.
-- **Topic card list**: Vertical list of cards, each containing:
-  - Topic title
-  - Completion checkbox (top-right corner) — toggleable at any time
-  - Number of interactions (the number of messages the user sent in this topic's chat)
-  - Completed/known topics appear **dimmed**
-- Clicking a topic card navigates to the topic's AI chat page.
-- **Revision chat**: A special card at the end of the list for general questions across all topics.
-
-### Topic Chat
-
-- **Style**: Similar to ChatGPT.
-  - User messages: Inside a bubble, aligned to the right.
-  - AI messages: No bubble, aligned to the left. No avatar or icon — just a color/label difference.
-- **Undo button (↩)**: Appears **on hover** next to the user's sent message. Clicking it reverts the conversation to the point right before that message and places the message text back in the input box.
-- **Rendering**: Supports LaTeX (both inline `$...$` and block `$$...$$`), Markdown, and syntax-highlighted code blocks.
-- **Input area**:
-  - Starts as a single-line text field.
-  - Grows in height as the user types more lines, up to a maximum height, after which it gains a scrollbar.
-  - **Enter** sends the message. **Shift+Enter** inserts a new line.
-  - A **send button** is also visible next to the input field.
-- **Initial message**: When the chat has no messages, the AI sends an introductory message about the topic and asks the user to confirm before starting.
+## Empty States
+All lists show a centered message guiding the user on what to do next (e.g., "No sections created yet. Click Create new Section to get started.").
