@@ -274,11 +274,29 @@ export default function AuthPage() {
         {/* Step 1 */}
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.2s_forwards]">
           <div className="lg:w-1/2 flex justify-center">
-            <div className="w-full aspect-video bg-gradient-to-br from-surface to-background rounded-3xl border border-border-subtle shadow-xl flex items-center justify-center">
-              {/* Abstract decorative icon for Uploading */}
-              <svg className="w-24 h-24 text-accent-blue/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
+            {/* Flip Container */}
+            <div className="w-full group [perspective:1000px]">
+              <div className="relative w-full aspect-video rounded-3xl transition-all duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] shadow-xl">
+                
+                {/* Front */}
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-surface to-background rounded-3xl border border-border-subtle flex items-center justify-center [backface-visibility:hidden]">
+                  {/* Abstract decorative icon for Uploading */}
+                  <svg className="w-24 h-24 text-accent-blue/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+
+                {/* Back */}
+                <div className="absolute inset-0 w-full h-full bg-surface rounded-3xl border border-border-subtle flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden">
+                  {/* Image Placeholder */}
+                  <img 
+                    src="/images/step1.png" 
+                    alt="Step 1 Preview" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+              </div>
             </div>
           </div>
           <div className="lg:w-1/2 space-y-4">
@@ -293,11 +311,29 @@ export default function AuthPage() {
         {/* Step 2 */}
         <div className="flex flex-col lg:flex-row-reverse items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.4s_forwards]">
           <div className="lg:w-1/2 flex justify-center">
-            <div className="w-full aspect-video bg-gradient-to-bl from-surface to-background rounded-3xl border border-border-subtle shadow-xl flex items-center justify-center">
-              {/* Abstract decorative icon for Planning */}
-              <svg className="w-24 h-24 text-accent-blue/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
+            {/* Flip Container */}
+            <div className="w-full group [perspective:1000px]">
+              <div className="relative w-full aspect-video rounded-3xl transition-all duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] shadow-xl">
+                
+                {/* Front */}
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-bl from-surface to-background rounded-3xl border border-border-subtle flex items-center justify-center [backface-visibility:hidden]">
+                  {/* Abstract decorative icon for Planning */}
+                  <svg className="w-24 h-24 text-accent-blue/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+
+                {/* Back */}
+                <div className="absolute inset-0 w-full h-full bg-surface rounded-3xl border border-border-subtle flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden">
+                  {/* Image Placeholder */}
+                  <img 
+                    src="/images/step2.png" 
+                    alt="Step 2 Preview" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+              </div>
             </div>
           </div>
           <div className="lg:w-1/2 space-y-4 text-left lg:text-right">
@@ -312,13 +348,28 @@ export default function AuthPage() {
         {/* Step 3 */}
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.6s_forwards]">
           <div className="lg:w-1/2 flex justify-center">
-            <div className="w-full aspect-video bg-gradient-to-tr from-surface to-background rounded-3xl border border-border-subtle shadow-xl flex items-center justify-center relative overflow-hidden">
-              {/* Abstract decorative icon for Studying/Chat */}
-              <svg className="w-24 h-24 text-accent-blue/40 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <div className="absolute inset-x-0 bottom-4 flex justify-center opacity-30">
-                <div className="w-1/2 h-1 bg-gradient-to-r from-transparent via-accent-blue to-transparent rounded-full blur-sm"></div>
+            {/* Flip Container */}
+            <div className="w-full group [perspective:1000px]">
+              <div className="relative w-full aspect-video rounded-3xl transition-all duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] shadow-xl">
+                
+                {/* Front */}
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-tr from-surface to-background rounded-3xl border border-border-subtle flex items-center justify-center [backface-visibility:hidden]">
+                  {/* Abstract decorative icon for Studying/Chat */}
+                  <svg className="w-24 h-24 text-accent-blue/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+
+                {/* Back */}
+                <div className="absolute inset-0 w-full h-full bg-surface rounded-3xl border border-border-subtle flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden">
+                  {/* Image Placeholder */}
+                  <img 
+                    src="/images/step3.png" 
+                    alt="Step 3 Preview" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
               </div>
             </div>
           </div>
