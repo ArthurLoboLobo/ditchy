@@ -145,7 +145,7 @@ export interface Translations {
 
 const ptBR: Translations = {
   auth: {
-    tagline: 'Prepare-se para suas provas com IA',
+    tagline: 'Estude menos. Estude melhor. Com IA.',
     hero: 'Transforme seus materiais em um plano de estudos personalizado e guiado por IA.',
     learnMore: 'Entenda como funciona',
     steps: [

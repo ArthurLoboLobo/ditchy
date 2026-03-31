@@ -2,7 +2,7 @@ import type { Translations } from './pt-BR';
 
 const en: Translations = {
   auth: {
-    tagline: 'Prepare for your exams with AI',
+    tagline: 'Study less. Study Better. With AI.',
     hero: 'Turn your study materials into a personalized, AI-guided study plan.',
     learnMore: 'Learn how it works',
     steps: [
