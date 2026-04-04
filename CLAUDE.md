@@ -81,7 +81,6 @@ db/
 ### Key Patterns
 
 - **Route groups**: `(auth)` has no navbar, `(main)` has navbar + breadcrumb. No `src/app/page.tsx` — the root `/` is served by `(auth)/page.tsx`. The auth page has a standalone language switcher (top-right) since there is no navbar.
-- **Self-chaining background jobs**: Plan generation uses self-invoking serverless functions to stay within Vercel's 60s timeout. File processing is triggered by the client (one call per file) and does not self-chain.
 - **RAG pipeline**: Extracted text → chunked (~512 tokens, ~100 overlap) → embedded with `gemini-embedding-2-preview` (taskType: `RETRIEVAL_DOCUMENT`) → stored in pgvector → retrieved via similarity search (top 4 chunks, query embedded with taskType: `RETRIEVAL_QUERY`). The LLM accesses this via the `searchStudentMaterials` tool.
 - **Initial AI message**: On first chat load, the GET messages endpoint generates an introductory AI message using a fake (unpersisted) user message to seed the response in the correct language.
 - **Chat summarization**: After each assistant message, token count (chars/4 approximation) is checked against `SUMMARIZATION_TOKEN_THRESHOLD`. When exceeded, older messages are summarized and stored in `chat_summaries`, keeping only the last `MIN_UNSUMMARIZED_MESSAGES` in full.
