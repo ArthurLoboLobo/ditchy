@@ -1,7 +1,13 @@
 # Future TODOs
 
+
+## Actual TODOs
 - **Production deployment**:
   - Add safety measures against spam (e.g., rate limiting OTP requests, captcha, abuse detection).
+  - Limit on:
+    - Number of topics and subtopics (very high, just to prevent spam)
+    - Size of a message (very high, since since we will have a usage limit)
+    - Size and number of tokens in the uploaded files (not very high, think of something reasonable)
 - **Share study plans**: Implement the ability to share study plans with others. Consider how both logged-in and non-logged-in users will view a shared plan, and how the sharing mechanism works (e.g., shareable link, copy-to-clipboard, etc.).
 - **Landing page improvements**: Add images/screenshots to the landing page and improve the copy to better explain how the app works and its value proposition.
 - **Improve embedding chunking**: Ensure the text chunking algorithm never splits a word into two separate chunks — always break at word boundaries.
@@ -11,10 +17,15 @@
 - **System prompt update**: Include in the system prompt: "Do not use emojis".
 - **Concurrent messaging**: Let the user write messages while the AI is generating a response.
 - **Page refresh resilience**: Make it possible to refresh the page without interfering with the response.
+- **Auto-renewal**: Add an auto-renew toggle to the subscription page. When enabled, if the user has enough balance at expiration, debit and extend automatically. If not, downgrade and notify. Requires a cron job (e.g. Vercel Cron) to check expirations periodically.
+- **Cron-based expiration handling**: Currently, plan expiration is checked on every API request. Add a cron job to proactively handle expirations (needed for auto-renewal and email notifications).
+- **Email notifications for subscription events**: Notify users when their Pro subscription expires, when auto-renewal succeeds or fails due to insufficient balance.
+- **More promotions**: Add new hardcoded promotions beyond the initial "university email" promotion (e.g. "Refer X friends → gain Y credits").
+
 
 ---
 
-## Production Readiness Gaps
+## Report that Claude gave me
 
 Additional issues identified through a codebase analysis that should be addressed before (or shortly after) going live.
 
@@ -43,7 +54,7 @@ Additional issues identified through a codebase analysis that should be addresse
 - **Add error tracking/monitoring (e.g., Sentry)**: The only logging is `console.error`, which goes to Vercel's ephemeral function logs. There's no alerting, no error grouping, and no way to proactively know when things break.
   - _Why it matters:_ In production, you can't watch logs in real time. Error tracking services capture errors with full context (stack trace, user info, request data), group duplicates, and alert you. Without this, you only learn about bugs when users complain — and most users don't complain, they just leave.
 
-- **Create `vercel.json` with explicit function configuration**: No Vercel config exists. Function timeouts, regions, and memory are all at defaults. The self-chaining plan generation could hit edge cases with the default 60s (Hobby) or 10s (if misconfigured) limits.
+- **Create `vercel.json` with explicit function configuration**: No Vercel config exists. Function timeouts, regions, and memory are all at defaults. The plan generation could hit edge cases with the default 60s (Hobby) or 10s (if misconfigured) limits.
   - _Why it matters:_ `vercel.json` lets you explicitly set function timeouts (up to 60s on Pro), memory allocation, and deployment regions. Without it, you rely on defaults that may not match your needs — especially for AI-heavy routes that need the full 60s.
 
 - **Add retry logic for Vercel Blob deletion**: When deleting sections or files, if the `del(blobUrls)` call fails (network error), the database records are still deleted but orphaned blobs remain in Vercel Blob storage, incurring ongoing costs.
