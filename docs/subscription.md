@@ -71,7 +71,7 @@ Triggered when a free user clicks "Subscribe to Pro".
 ## Payment Logic (Backend)
 
 When subscribing:
-1. Invalidate any existing active payment for this user **in our DB** (mark as invalid so its webhook is ignored if paid late). AbacatePay has no cancel endpoint — old QR codes just expire naturally.
+1. Invalidate any existing active payment for this user **in our DB**. AbacatePay has no cancel endpoint — old QR codes just expire naturally. If a webhook arrives for an invalidated payment, **credit the paid amount to the user's balance** instead of activating the subscription (the user paid real money, so they must not lose it).
 2. User chooses whether to use credits. If yes, lock `credits_to_debit = min(balance, subscription_price)`.
 3. Calculate `pix_amount = subscription_price - credits_to_debit`.
 4. If `pix_amount > 0`: call `POST /v1/pixQrCode/create` with `amount` (in cents), `expiresIn: 600` (10 min), and `metadata: { userId, credits_to_debit }`. The response contains `brCodeBase64` (QR image), `brCode` (copy-paste code), and `id` (payment ID). Store the payment ID and `credits_to_debit` in our DB.
