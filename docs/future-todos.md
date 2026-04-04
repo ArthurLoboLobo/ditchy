@@ -9,7 +9,6 @@
     - Size of a message (very high, since since we will have a usage limit)
     - Size and number of tokens in the uploaded files (not very high, think of something reasonable)
 - **Share study plans**: Implement the ability to share study plans with others. Consider how both logged-in and non-logged-in users will view a shared plan, and how the sharing mechanism works (e.g., shareable link, copy-to-clipboard, etc.).
-- **Landing page improvements**: Add images/screenshots to the landing page and improve the copy to better explain how the app works and its value proposition.
 - **Improve embedding chunking**: Ensure the text chunking algorithm never splits a word into two separate chunks — always break at word boundaries.
 - **Smarter problem-aware retrieval**: Make the embedding and retrieval process more efficient by ensuring each problem is always placed in its own chunk(s). When a chunk belonging to a problem is retrieved via similarity search, return the entire problem (and its solution, if available) rather than just the matched chunk.
 - **Fix Enter on mobile**: Fix the Enter key on mobile devices so that it inserts a newline instead of sending.
