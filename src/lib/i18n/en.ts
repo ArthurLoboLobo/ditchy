@@ -157,6 +157,17 @@ const en: Translations = {
     usageWarningFreeBest: 'You have used {percent}% of your daily best model limit.',
     usageWarningFreeDegraded: 'You have used {percent}% of your remaining daily limit.',
     usageWarningFreeDegradedFinal: 'You have used {percent}% of your remaining daily limit. After this, access will be blocked until tomorrow.',
+    title: 'Subscription',
+    freePlan: 'Free',
+    proPlan: 'Pro',
+    currentPlan: 'Current plan',
+    limitedUsage: 'Limited daily usage',
+    unlimitedUsage: 'Unlimited usage',
+    perMonth: 'per month',
+    subscribe: 'Subscribe',
+    proUntil: 'You are Pro until {date}',
+    yourBalance: 'Your balance: {amount}',
+    promotions: 'Promotions',
   },
 } as const;
 

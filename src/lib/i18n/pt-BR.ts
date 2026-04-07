@@ -151,6 +151,17 @@ export interface Translations {
     usageWarningFreeBest: string;
     usageWarningFreeDegraded: string;
     usageWarningFreeDegradedFinal: string;
+    title: string;
+    freePlan: string;
+    proPlan: string;
+    currentPlan: string;
+    limitedUsage: string;
+    unlimitedUsage: string;
+    perMonth: string;
+    subscribe: string;
+    proUntil: string;
+    yourBalance: string;
+    promotions: string;
   };
 }
 
@@ -311,6 +322,17 @@ const ptBR: Translations = {
     usageWarningFreeBest: 'Você já usou {percent}% do limite diário do modelo principal.',
     usageWarningFreeDegraded: 'Você já usou {percent}% do limite diário restante.',
     usageWarningFreeDegradedFinal: 'Você já usou {percent}% do limite diário restante. Após isso, o acesso será bloqueado até amanhã.',
+    title: 'Assinatura',
+    freePlan: 'Grátis',
+    proPlan: 'Pro',
+    currentPlan: 'Plano atual',
+    limitedUsage: 'Uso diário limitado',
+    unlimitedUsage: 'Uso ilimitado',
+    perMonth: 'por mês',
+    subscribe: 'Assinar',
+    proUntil: 'Você é Pro até {date}',
+    yourBalance: 'Seu saldo: {amount}',
+    promotions: 'Promoções',
   },
 };
 
