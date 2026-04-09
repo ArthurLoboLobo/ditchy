@@ -501,6 +501,8 @@ onError(error) {
 
 Remove the old inline `rateLimitMsg` state and the `chatError` inline display — everything is now toasts + bounce-back.
 
+**i18n keys used**: `t.subscription.usageLimitFree` (added in this step to both `pt-BR.ts` and `en.ts` `subscription` section).
+
 **Test**: Frontend-only — no unit test. Verify manually: set `DAILY_TOKEN_LIMIT_FREE = 1` temporarily. Send two messages as free user. Second message bounces back to input box, toast shows usage limit message. Verify no orphaned message in DB. Test with a simulated API error — message bounces back, generic toast appears.
 
 ---
@@ -652,6 +654,8 @@ Comparison logic:
 - Refresh page mid-best-phase at 50% → no toast on load (state is `null`).
 - For pro user: send messages until phase switches to `'degraded'` → degradation toast. No further warnings (no limit in pro degraded).
 
+**i18n keys used**: `t.subscription.freeDegraded`, `t.subscription.proDegraded`, `t.subscription.usageWarningPro`, `t.subscription.usageWarningFreeBest`, `t.subscription.usageWarningFreeDegraded`, `t.subscription.usageWarningFreeDegradedFinal` (all added in this step to both `pt-BR.ts` and `en.ts` `subscription` section).
+
 ---
 
 ## Step 13: Frontend — Navbar Changes
@@ -688,6 +692,8 @@ Each component that calls `useUser()` makes its own fetch. The navbar and subscr
 3. **Profile dropdown**: Add "Subscription" menu item linking to `/subscription`, for both plans. Place it above "Logout".
 4. While `loading` is true, don't show the chip (prevent flash of wrong state).
 
+**i18n keys used**: `t.subscription.subscribeToPro`, `t.nav.subscription` (added in this step).
+
 **Test**: Frontend-only — no unit test. Verify manually: free user sees the "Subscribe to Pro" chip; clicking navigates to `/subscription`. Pro user does not see the chip. "Subscription" appears in the dropdown for both plans.
 
 ---
@@ -723,6 +729,8 @@ Two side-by-side cards:
 ### Balance display
 
 Simple text: "Your balance: R$X.XX" (format `balance / 100` with 2 decimals).
+
+**i18n keys added**: `t.subscription.title`, `t.subscription.freePlan`, `t.subscription.proPlan`, `t.subscription.currentPlan`, `t.subscription.limitedUsage`, `t.subscription.unlimitedUsage`, `t.subscription.perMonth`, `t.subscription.subscribe`, `t.subscription.proUntil`, `t.subscription.yourBalance`, `t.subscription.promotions` (added in this step to both `pt-BR.ts` and `en.ts` `subscription` section, plus the `Translations` interface).
 
 **Test**: Frontend-only — no unit test. Verify manually: free user sees plan cards, subscribe button, balance. Pro user sees status card, no subscribe button. Balance displays correctly with both 0 and non-zero values.
 
@@ -989,6 +997,8 @@ Internal state: `step: 'confirmation' | 'qr' | 'success'`, `useCredits: boolean`
   - Otherwise: text = "Pay R$X.XX with Pix" → POST → expects `{ status: 'pending', brCode, brCodeBase64, expiresAt, paymentId }` → store in `qrData`, set `step = 'qr'`.
   - If POST returns an error → `showToast(t.subscription.paymentFailed, 'error')`, stay on confirmation step, set `loading = false`.
 
+**i18n keys added**: `t.subscription.confirmationTitle`, `t.subscription.useBalance`, `t.subscription.confirmSubscription`, `t.subscription.payWithPix`, `t.subscription.paymentFailed` (added in this step to both `pt-BR.ts` and `en.ts` `subscription` section, plus the `Translations` interface).
+
 **Test**: Frontend-only — no unit test. Verify manually: 0 balance → toggle disabled, button shows full price. R$10 balance, toggle on → "Pay R$10.00". Toggle off → "Pay R$20.00". R$20+ balance, toggle on → "Confirm subscription". Confirm → spinner → success. API error → toast, stays on confirmation.
 
 ---
@@ -1006,6 +1016,8 @@ Internal state: `step: 'confirmation' | 'qr' | 'success'`, `useCredits: boolean`
 - **When timer reaches 0**: stop polling, replace QR code with text "Payment expired". The X button is still there to close. User can click "Subscribe to Pro" again to start a fresh flow.
 - **When user closes the modal** (X or overlay click): stop polling, clear interval. The QR code expires naturally on AbacatePay's side. If the user later clicks "Subscribe" again, the subscribe endpoint invalidates the old payment and creates a new one.
 
+**i18n keys added**: `t.subscription.pixInstructions`, `t.subscription.payWithinMinutes`, `t.subscription.copyCode`, `t.subscription.copied`, `t.subscription.paymentExpired` (added in this step).
+
 **Test**: Frontend-only — no unit test. Verify manually: QR image renders, "Copy" button works, timer counts down. Simulate payment → modal transitions to success within one poll cycle. Close modal before payment → subscribe again → new QR. Timer expires → "Payment expired" text.
 
 ---
@@ -1018,53 +1030,13 @@ Internal state: `step: 'confirmation' | 'qr' | 'success'`, `useCredits: boolean`
 - On close: call `refetch()` from the `useUser` hook (both the subscription page's instance and the navbar's instance will refetch on their next render since they're independent hooks — but the subscription page can call its `refetch` directly). The subscription page re-renders with pro status. The navbar chip disappears on next mount/navigation (or refetch if we trigger it).
 - To ensure the navbar updates immediately without navigation: the payment modal's `onClose` callback (passed from subscription page) triggers both the subscription page's `useUser().refetch()` and can set a flag or use a simple event. Simplest: the subscription page refetches, and the navbar refetches on any route change (it already re-runs `useEffect` on mount). Since closing the modal doesn't cause navigation, the navbar updates when the user next navigates. This is acceptable UX — the chip disappears as soon as they go to another page.
 
+**i18n keys added**: `t.subscription.youAreNowPro`, `t.subscription.close` (added in this step).
+
 **Test**: Frontend-only — no unit test. Verify manually: payment completes → success screen shows. Close modal → subscription page reflects pro status. Navigate away → navbar chip gone.
 
 ---
 
-## Step 22: i18n — Subscription & Payment Strings
-
-### Add to `src/lib/i18n/pt-BR.ts` and `en.ts`
-
-New section `subscription`:
-```
-subscription: {
-  title, subscribeToPro, free, pro, freeDescription, proDescription,
-  pricePerMonth, currentPlan, subscribeButton, proUntil, balance,
-  // Payment modal
-  confirmationTitle, yourBalance, useBalance, confirmSubscription,
-  payWithPix, pixInstructions, payWithinMinutes, copyCode, copied,
-  paymentSuccess, youAreNowPro, close, paymentExpired,
-  // Usage warnings (6 variants: free-best 75%/90%, free-degraded 75%/90%, pro 75%/90%)
-  usageWarning75FreeBest, usageWarning90FreeBest,
-  usageWarning75FreeDegraded, usageWarning90FreeDegraded,
-  usageWarning75Pro, usageWarning90Pro,
-  // Phase transition toasts
-  freeDegraded,   // "Switching to a lighter model. Upgrade to Pro for more!" (with link)
-  proDegraded,    // "Switching to a lighter model for the rest of the day."
-  // Usage limit reached (hard cutoff — free users only)
-  usageLimitFree,
-  // Errors
-  alreadyPro, insufficientBalance, paymentFailed,
-}
-```
-
-New section `promotions`:
-```
-promotions: {
-  title,
-  // University promo (strings hardcoded per promotion, not generic)
-  universityTitle, universityDescription, universityCreditAmount,
-  // Shared
-  claimed, claim, notEligible, alreadyClaimed, claimSuccess,
-}
-```
-
-**Test**: Frontend-only — no unit test. Verify manually: switch language on the subscription page and payment modal. Confirm all new `subscription.*` keys render in both pt-BR and English without missing translations.
-
----
-
-## Step 23: End-to-End Testing — Subscription Flow
+## Step 22: End-to-End Testing — Subscription Flow
 
 This step has no new code — it's a checkpoint to verify everything works together. Two categories:
 
@@ -1128,7 +1100,7 @@ These require running the dev server and interacting with the UI. They verify th
 
 ---
 
-## Step 24: Database Migration — Promotion Table
+## Step 23: Database Migration — Promotion Table
 
 ```sql
 CREATE TABLE promo_university_email (
@@ -1150,7 +1122,7 @@ Run migration up/down manually against the test DB. Automated tests:
 
 ---
 
-## Step 25: Database Queries — Promotions
+## Step 24: Database Queries — Promotions
 
 ### `src/lib/db/queries/promotions.ts` (new file)
 
@@ -1169,7 +1141,7 @@ Run migration up/down manually against the test DB. Automated tests:
 
 ---
 
-## Step 26: API — Promotions Endpoints
+## Step 25: API — Promotions Endpoints
 
 ### `GET /api/promotions` (new file)
 
@@ -1209,7 +1181,7 @@ Additionally, add an **email eligibility check** to `tests/unit/config.test.ts` 
 
 ---
 
-## Step 27: Frontend — Promotions Section on Subscription Page
+## Step 26: Frontend — Promotions Section on Subscription Page
 
 ### Add to subscription page
 
@@ -1231,7 +1203,7 @@ Below the balance display:
 
 ---
 
-## Step 28: i18n — Promotion Strings
+## Step 27: i18n — Promotion Strings
 
 ### Extend translations
 
@@ -1253,17 +1225,17 @@ promotions: {
 
 ---
 
-## Step 29: End-to-End Testing — Promotions
+## Step 28: End-to-End Testing — Promotions
 
-Same structure as Step 23: checkpoint to verify everything works together.
+Same structure as Step 22: checkpoint to verify everything works together.
 
 ### Automated tests (already written in previous steps)
 
 By this point, additionally passing:
 
-- `tests/db/migrations.test.ts` — now also includes `promo_university_email` unique constraint (Step 24)
-- `tests/db/promotions.test.ts` — `hasClaimedUniversityPromo`, `claimUniversityPromo` (Step 25)
-- `tests/unit/config.test.ts` — now also includes email suffix matching tests (Step 26)
+- `tests/db/migrations.test.ts` — now also includes `promo_university_email` unique constraint (Step 23)
+- `tests/db/promotions.test.ts` — `hasClaimedUniversityPromo`, `claimUniversityPromo` (Step 24)
+- `tests/unit/config.test.ts` — now also includes email suffix matching tests (Step 25)
 
 ### Automated integration test (`tests/integration/promo-subscribe-flow.test.ts` — needs DB)
 
@@ -1289,7 +1261,7 @@ By this point, additionally passing:
 
 ---
 
-## Step 30: Environment Variables & Deployment
+## Step 29: Environment Variables & Deployment
 
 ### New env vars
 
@@ -1329,19 +1301,18 @@ Add `ABACATEPAY_API_KEY` and `ABACATEPAY_WEBHOOK_SECRET` to Vercel project setti
 | 8 | GET /api/user | Step 5 |
 | 9 | Usage tracking in chat | Steps 7, 4 |
 | 10 | Usage limit enforcement + integration test | Steps 9, 5 |
-| 11-12 | Frontend chat error handling + warnings | Steps 9-10 |
-| 13 | Navbar changes | Step 8 |
-| 14 | Subscription page shell | Step 8 |
+| 11-12 | Frontend chat error handling + warnings + i18n keys | Steps 9-10 |
+| 13 | Navbar changes + i18n keys | Step 8 |
+| 14 | Subscription page shell + i18n keys | Step 8 |
 | 15 | AbacatePay client library + unit tests | Step 4 |
 | 16 | Subscribe endpoint + integration test | Steps 5-6, 15 |
 | 17 | Payment status polling endpoint | Step 6 |
 | 18 | Webhook handler + integration test + secret verification test | Steps 6, 5 |
-| 19-21 | Payment modal (3 steps) | Steps 16-17 |
-| 22 | i18n for subscription | Steps 11-21 |
-| 23 | E2E testing — subscription (checkpoint: all tests pass) | All above |
-| 24-25 | Promotion DB + queries + tests | Step 1 |
-| 26 | Promotion API endpoints + email suffix tests | Steps 25, 4 |
-| 27 | Promotion UI | Steps 26, 14 |
-| 28 | i18n for promotions | Step 27 |
-| 29 | E2E testing — promotions (checkpoint + integration test) | All above |
-| 30 | Env vars + deployment | All above |
+| 19-21 | Payment modal (3 steps) + i18n keys | Steps 16-17 |
+| 22 | E2E testing — subscription (checkpoint: all tests pass) | All above |
+| 23-24 | Promotion DB + queries + tests | Step 1 |
+| 25 | Promotion API endpoints + email suffix tests | Steps 24, 4 |
+| 26 | Promotion UI | Steps 25, 14 |
+| 27 | i18n for promotions | Step 26 |
+| 28 | E2E testing — promotions (checkpoint + integration test) | All above |
+| 29 | Env vars + deployment | All above |
