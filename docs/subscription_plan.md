@@ -1100,25 +1100,28 @@ These require running the dev server and interacting with the UI. They verify th
 
 ---
 
-## Step 23: Database Migration — Promotion Table
+## Step 23: Database Migration — Promotion Claims Table
 
 ```sql
-CREATE TABLE promo_university_email (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE promotion_claims (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  promotion_id TEXT        NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, promotion_id)
 );
 ```
 
-One row per user who claimed the promotion. `UNIQUE` on `user_id` prevents double claims.
+One row per `(user, promotion)` pair. The `UNIQUE (user_id, promotion_id)` constraint prevents double claims of the same promotion, while still allowing a user to claim multiple different promotions. `promotion_id` is a free-form string that matches one of the ids in `PROMOTION_IDS` (Step 24) — no FK, since the list of known promotions lives in code.
 
 **Migration file**: `009_create_promotions.js`
 
 **Test** (add to `tests/db/migrations.test.ts` — needs DB):
 
 Run migration up/down manually against the test DB. Automated tests:
-- Insert a promo claim for user A. Attempt to insert another claim for user A — verify the UNIQUE constraint on `user_id` rejects it.
-- Insert a claim for user A. Insert a claim for user B — verify it succeeds (different users can both claim).
+- Insert a claim for user A with `promotion_id = 'university-email'`. Attempt to insert the same pair again — verify the UNIQUE constraint rejects it.
+- Insert a claim for user A with `promotion_id = 'university-email'`, then another with `promotion_id = 'launch-bonus'` — verify both succeed (same user, different promotions).
+- Insert a claim for user A and another for user B with the same `promotion_id` — verify both succeed (different users, same promotion).
 
 ---
 
@@ -1126,80 +1129,155 @@ Run migration up/down manually against the test DB. Automated tests:
 
 ### `src/lib/db/queries/promotions.ts` (new file)
 
-- `hasClaimedUniversityPromo(userId)` — returns boolean.
-- `claimUniversityPromo(userId, creditAmount)` — in a transaction: insert into `promo_university_email`, increment user balance. Returns the new balance.
+This file is the single source of truth for every promotion the app offers. All per-promotion logic — eligibility rules, credit amounts, anything else — lives directly inside `getUserPromotion`. A small `PROMOTION_IDS` constant lists the known ids so `getUserPromotions` can iterate without any other abstraction.
+
+```ts
+export type UserPromotion = {
+  id: string;
+  creditAmount: number;
+  eligible: boolean;
+  claimed: boolean;
+};
+
+const PROMOTION_IDS = ['university-email'] as const;
+```
+
+Functions:
+
+- `getUserPromotion(userId, promotionId)` — returns `UserPromotion | null`. This is where **all** per-promotion logic lives: a `switch (promotionId)` (or equivalent) with one branch per known id. Each branch fetches whatever it needs (the user row, the matching `promotion_claims` row, etc.) and returns `{ id, creditAmount, eligible, claimed }`. The default case returns `null` so unknown ids become 404s at the route layer. The `university-email` branch fetches the user, checks `UNIVERSITY_EMAIL_SUFFIXES.some((suffix) => user.email.toLowerCase().endsWith(suffix))` for `eligible`, looks up `promotion_claims` for `claimed`, and hardcodes `creditAmount: UNIVERSITY_PROMO_CREDIT_CENTS`. The `.toLowerCase()` is there because `endsWith` is case-sensitive — before implementing, verify whether `src/lib/db/queries/users.ts` already lowercases emails on insert. If it does, the `.toLowerCase()` here is belt-and-suspenders; if it doesn't, it's load-bearing.
+- `getUserPromotions(userId)` — loops over `PROMOTION_IDS` and calls `getUserPromotion(userId, id)` for each, filtering out any `null` results (there shouldn't be any in normal operation, since every id in `PROMOTION_IDS` should have a branch, but the filter keeps the return type clean). Returns `UserPromotion[]`. This function contains **no** per-promotion logic — adding a new promotion means adding its id to `PROMOTION_IDS` and its branch to `getUserPromotion`, nothing else.
+- `claimPromo(userId, promotionId, creditAmount)` — `Promise<void>`. Atomically inserts into `promotion_claims` and increments `users.balance` via `sql.transaction([...])` from `@/lib/db/connection` (same pattern as `src/app/api/webhooks/abacatepay/route.ts:43`). On a duplicate claim the Postgres unique-violation surfaces as a thrown `NeonDbError` with `code === '23505'`; re-throw unchanged so the API route can map it.
 
 **Test** (`tests/db/promotions.test.ts` — needs DB):
 
-`hasClaimedUniversityPromo`:
-- Create a user who hasn't claimed. Call `hasClaimedUniversityPromo` — verify it returns `false`.
-- Claim the promo for the user. Call `hasClaimedUniversityPromo` again — verify it returns `true`.
+`getUserPromotions`:
+- Create a user with `@gmail.com` email and no claims — verify the returned list contains the `university-email` entry with `eligible: false`, `claimed: false`, `creditAmount: 2000`.
+- Create a user with `@dac.unicamp.br` email and no claims — verify the `university-email` entry has `eligible: true`, `claimed: false`.
+- Same user, then claim `university-email` — verify `eligible: true`, `claimed: true`.
+- Verify suffix matching: `@usp.br` user is eligible; `@unicamp.br.fake.com` user is not (suffix appears mid-string, not at the end); empty-email edge case is not eligible.
 
-`claimUniversityPromo`:
-- Create a user with 0 balance. Call `claimUniversityPromo(userId, 2000)`. Verify: returned balance is 2000. Query the user row — confirm `balance = 2000`. Query `promo_university_email` — confirm a row exists for the user.
-- Call `claimUniversityPromo` again for the same user — verify it throws (unique constraint). Query the user row — confirm `balance` is still 2000 (not double-credited, transaction rolled back).
+`getUserPromotion`:
+- Returns the same shape as one entry from `getUserPromotions` for a known id.
+- Returns `null` for an unknown `promotionId` like `'does-not-exist'`.
+
+`claimPromo`:
+- Create a user with 0 balance. Call `claimPromo(userId, 'university-email', 2000)`. Verify: returned balance is 2000. Query the user row — confirm `balance = 2000`. Query `promotion_claims` — confirm a row exists for `(userId, 'university-email')`.
+- Call `claimPromo(userId, 'university-email', 2000)` again — verify it throws (unique constraint). Query the user row — confirm `balance` is still 2000 (not double-credited, transaction rolled back).
+- Call `claimPromo(userId, 'launch-bonus', 500)` for the same user — verify it succeeds and balance becomes 2500 (different `promotion_id`, no conflict). Note: this exercises the table only — `'launch-bonus'` doesn't need to exist as a known promotion in the read functions for this test.
 
 ---
 
 ## Step 25: API — Promotions Endpoints
 
+Both routes are thin wrappers around the queries defined in Step 24. There is no `src/lib/promotions.ts` — all per-promotion logic lives in `src/lib/db/queries/promotions.ts`.
+
 ### `GET /api/promotions` (new file)
 
-Returns the list of promotions with claim status for the current user. The response only includes `id`, `creditAmount`, `claimed`, `eligible` — the frontend maps `id` to translation keys for title/description (since the app supports both pt-BR and English).
+Returns the list of promotions with eligibility and claim status for the current user. The response only includes `id`, `creditAmount`, `eligible`, `claimed` — the frontend maps `id` to translation keys for title/description (since the app supports both pt-BR and English).
 
 ```json
 [
   {
     "id": "university-email",
     "creditAmount": 2000,
-    "claimed": false,
-    "eligible": true
+    "eligible": true,
+    "claimed": false
   }
 ]
 ```
 
 Logic:
 1. Auth check → 401.
-2. `getUserById(userId)` to get the user's email.
-3. For each promotion (hardcoded list):
-   - Check eligibility (e.g., email suffix for university promo).
-   - Check claim status (e.g., `hasClaimedUniversityPromo(userId)`).
-4. Return the list. The frontend uses `id` to look up `t.promotions.universityTitle`, `t.promotions.universityDescription`, etc.
+2. Return `await getUserPromotions(userId)`.
 
-### `POST /api/promotions/university-email/claim` (new file)
+### `POST /api/promotions/[id]/claim` (new file, dynamic route)
 
 1. Auth check → 401.
-2. `getUserById(userId)` to get email.
-3. Check email suffix matches one of `UNIVERSITY_EMAIL_SUFFIXES` → if not, `return json({ error: 'NOT_ELIGIBLE' }, 400)`.
-4. `hasClaimedUniversityPromo(userId)` → if true, `return json({ error: 'ALREADY_CLAIMED' }, 400)`.
-5. `claimUniversityPromo(userId, UNIVERSITY_PROMO_CREDIT_CENTS)` → returns new balance.
-6. Return `{ balance: newBalance }`.
+2. `const promo = await getUserPromotion(userId, params.id)` → if `null`, `return json({ error: 'NOT_FOUND' }, 404)`.
+3. If `!promo.eligible`, `return json({ error: 'NOT_ELIGIBLE' }, 400)`.
+4. If `promo.claimed`, `return json({ error: 'ALREADY_CLAIMED' }, 400)`.
+5. `claimPromo(userId, promo.id, promo.creditAmount)` inside a `try/catch`. On `NeonDbError` with `err.code === '23505'` (unique violation — concurrent claim between step 4 and here), `return json({ error: 'ALREADY_CLAIMED' }, 400)`; any other error falls through to the outer 500 handler. Import `NeonDbError` from `@neondatabase/serverless`.
+6. Return `{ success: true }`.
 
-**Test**: The API routes are thin wrappers around `hasClaimedUniversityPromo`, `claimUniversityPromo`, and `UNIVERSITY_EMAIL_SUFFIXES` — all tested in `tests/db/promotions.test.ts` and `tests/unit/config.test.ts`. No dedicated API route test. Verify manually: `@unicamp.br` user claims → balance +2000. Claim again → 400 `ALREADY_CLAIMED`. `@gmail.com` user → 400 `NOT_ELIGIBLE`. Unauthenticated → 401.
-
-Additionally, add an **email eligibility check** to `tests/unit/config.test.ts` (no DB): verify that `UNIVERSITY_EMAIL_SUFFIXES` correctly matches emails like `student@unicamp.br` and `student@dac.unicamp.br`, and does not match `user@gmail.com` or `user@unicamp.br.fake.com`. This tests the suffix-matching logic that the API route uses.
+**Test**: no dedicated test file — both routes are thin wrappers around `getUserPromotions`, `getUserPromotion`, and `claimPromo`, which are already covered by `tests/db/promotions.test.ts`. Verify manually: `@dac.unicamp.br` user claims `university-email` → balance +2000. Claim again → 400 `ALREADY_CLAIMED`. `@gmail.com` user → 400 `NOT_ELIGIBLE`. Unknown id → 404 `NOT_FOUND`. Unauthenticated → 401.
 
 ---
 
 ## Step 26: Frontend — Promotions Section on Subscription Page
 
-### Add to subscription page
+All additions happen in `src/app/(main)/subscription/page.tsx` and one new component, `PromotionDetailModal`. No new hooks, no global state — the subscription page owns everything.
 
-Below the balance display:
+### Data loading
 
-- **Section title**: "Promotions"
-- **Promotion cards**: fetched from `GET /api/promotions`.
-  - Each card: title, credit amount, "Claimed" badge if claimed.
-  - Clicking a card opens the promotion detail modal.
+On mount, the subscription page fires `GET /api/promotions` via a plain `useEffect` + `fetch` (matching how the rest of the page already treats one-shot reads — we don't have React Query). Local state:
 
-### Promotion Detail Modal
+- `promotions: UserPromotion[] | null` — `null` while loading, array after the first fetch.
+- `promotionsError: boolean` — set when the fetch fails.
 
-- Title, description.
-- If eligible and not claimed: "Claim" button → calls POST claim endpoint → on success, show toast, update balance, mark as claimed.
-- If not eligible: show why (e.g., "Your email is not from Unicamp or USP").
-- If already claimed: "Already claimed" text, button hidden.
+Alongside the existing `const { user, loading, refetch } = useUser()` call. The promotions fetch is independent from the user fetch, so both loading states are tracked separately; the promotions section renders its own small spinner while `promotions === null`, without blocking the rest of the page.
 
-**Test**: Frontend-only — no unit test. Verify manually: `@unicamp.br` user sees card, clicks, claims, balance updates, card shows "Claimed". `@gmail.com` user sees "Not eligible". Revisit after claiming → "Already claimed".
+After a successful claim, the page refreshes both sources of truth: it re-fires the `GET /api/promotions` request (to flip the claimed card) and calls `refetch()` from `useUser` (to update the navbar balance chip and the on-page balance display). These are the only two pieces of state affected, so a full page reload is not needed.
+
+### Rendering the cards
+
+A new section is added **below** the existing balance display (so the flow reads: plan → balance → promotions). Structure:
+
+- Section title from `t.promotions.title`.
+- If `promotions === null`: small inline spinner.
+- If `promotionsError`: a muted one-liner from `t.errors.*` (existing pattern), no retry button.
+- Otherwise: a responsive grid of `Card` components, one per entry in `promotions`, in the order the API returned them. Each card shows:
+  - Title and description resolved via a pure `camelCase(id)` transform: id `university-email` → `t.promotions.universityEmailTitle` and `t.promotions.universityEmailDescription`. No manual id → key mapping table — the transform is the mapping.
+  - Credit amount formatted as `R$X.XX` by the page (reuse the `SUBSCRIPTION_PRICE_CENTS` formatter already in the file). The number is rendered directly; it is **not** baked into any translation string.
+  - A `Badge` with `t.promotions.claimed` in the top-right when `claimed === true`.
+  - The whole card is clickable (pointer cursor, hover state) and opens the modal for that promotion.
+
+Per Step 25's API contract the frontend maps promotion `id` → translation keys, so no title/description ever comes from the API. If a future promotion id is added on the backend but the frontend i18n bundle doesn't yet have `${camelCase(id)}Title` / `${camelCase(id)}Description` keys, the card should fall back to `t.promotions.unknownTitle` / `t.promotions.unknownDescription` — no crash.
+
+### Promotion detail modal (`src/components/PromotionDetailModal.tsx`, new file)
+
+Reuses the existing `Modal` UI primitive (same as `PaymentModal`). Props: the selected `UserPromotion`, an `onClose` handler, and an `onClaimed` handler the page uses to trigger the two refetches above.
+
+Local state inside the modal:
+
+- `claiming: boolean` — true while the POST request is in flight.
+- `error: string | null` — the last error key (e.g. `'NOT_ELIGIBLE'`, `'ALREADY_CLAIMED'`, `'UNKNOWN'`), mapped to a translation string for display.
+
+Rendered content depends on the promotion's flags:
+
+- **Eligible, not claimed** — show title, description, credit amount, and an enabled `Claim` button. Clicking the button:
+  1. Sets `claiming = true`, clears any prior error.
+  2. Calls `POST /api/promotions/[id]/claim`.
+  3. On 200: call `useToast` with `t.promotions.claimSuccess`, fire `onClaimed()` (which triggers the two parent refetches), then close the modal.
+  4. On 400 `ALREADY_CLAIMED`: set `error` to the `alreadyClaimed` key, fire `onClaimed()` so the parent refetches and the card flips to "Claimed", leave the modal open so the user sees the message. This can happen if the user claimed in another tab or if the page data is stale.
+  5. On 400 `NOT_ELIGIBLE`: set `error` to the `notEligible` key, fire `onClaimed()` so the card re-renders with the correct state.
+  6. On 404 `NOT_FOUND` / 5xx / network error: set `error` to `t.promotions.claimError`; do not refetch.
+  7. In all cases: set `claiming = false` at the end.
+  - While `claiming === true`, the button shows a small spinner and is disabled; clicking the backdrop or close button is blocked to avoid interrupting the request.
+- **Not eligible** — show title, description, credit amount, and a muted `t.promotions.notEligible` line. No button. Close button works normally.
+- **Already claimed** — show title, description, credit amount, and a muted `t.promotions.alreadyClaimed` line with a "Claimed" badge next to the title. No button.
+
+No optimistic updates — the modal waits for the POST to return before changing anything. Given the claim is a one-shot server action with real money implications (credits), the clarity of pessimistic UI is worth the ~200ms latency.
+
+### Accessibility & design constraints
+
+- Dark-mode only, flat design, no animations — same as the rest of the app.
+- Card hover state uses the existing `border-border-hover` utility.
+- Modal close on backdrop click and `Escape` (both inherited from the `Modal` primitive).
+
+**Test**: Frontend-only — no unit test. Verify manually, with a `@dac.unicamp.br` user:
+
+1. Load `/subscription` → promotions section appears below balance, single "university-email" card visible with `eligible: true, claimed: false`.
+2. Click the card → modal opens → click `Claim` → button shows spinner → success toast → modal closes → card shows "Claimed" badge → navbar balance chip updated to +R$20.
+3. Reopen the card → modal shows "Already claimed" line, no button.
+4. Open a second tab, claim there first, then click `Claim` in the first tab → modal shows `ALREADY_CLAIMED` error, the underlying card flips to "Claimed" after the background refetch.
+
+With a `@gmail.com` user:
+
+5. Load `/subscription` → card visible with `eligible: false, claimed: false` → click → modal shows "Not eligible" → no button.
+
+Network failure:
+
+6. Offline the tab, click `Claim` → modal shows generic error, card state unchanged.
 
 ---
 
@@ -1207,21 +1285,34 @@ Below the balance display:
 
 ### Extend translations
 
+Keys follow the `camelCase(id)` convention set in Step 26 — the `university-email` promo's title is `universityEmailTitle`, not `universityTitle`. The credit amount is **never** baked into a translation; strings that need to mention it use `{amount}` placeholders that the frontend `.replace()`s at render time (same pattern as the existing `t.subscription.proUntil`).
+
 ```
 promotions: {
   title: 'Promotions' / 'Promoções',
-  universityTitle: 'Estuda na Unicamp ou USP? Ganhe 1 mês grátis!',
-  universityDescription: 'Se o email da sua conta pertence à Unicamp ou USP...',
-  creditAmount: 'R$20.00 in credits' / 'R$20,00 em créditos',
-  claimed: 'Claimed' / 'Resgatado',
-  claim: 'Claim' / 'Resgatar',
-  notEligible: 'Your email is not from a qualifying university.' / '...',
-  alreadyClaimed: 'You already claimed this promotion.' / '...',
-  claimSuccess: 'Credits added to your balance!' / '...',
+
+  // Per-promotion strings — keyed by camelCase(id)
+  universityEmailTitle: 'Estuda na Unicamp ou USP? Ganhe 1 mês grátis!',
+  universityEmailDescription: 'Se o email da sua conta pertence à Unicamp ou USP...',
+
+  // Fallback when the backend returns an id the frontend doesn't know
+  unknownTitle: 'Promoção' / 'Promotion',
+  unknownDescription: 'Detalhes indisponíveis.' / 'Details unavailable.',
+
+  // Shared UI strings
+  creditAmount: '{amount} em créditos' / '{amount} in credits',
+  claimed: 'Resgatado' / 'Claimed',
+  claim: 'Resgatar' / 'Claim',
+  notEligible: 'Seu email não é de uma universidade qualificada.' / 'Your email is not from a qualifying university.',
+  alreadyClaimed: 'Você já resgatou esta promoção.' / 'You already claimed this promotion.',
+  claimSuccess: 'Créditos adicionados ao seu saldo!' / 'Credits added to your balance!',
+  claimError: 'Não foi possível resgatar a promoção. Tente novamente.' / 'Could not claim promotion. Please try again.',
 }
 ```
 
-**Test**: Frontend-only — no unit test. Verify manually: switch language, confirm all `promotions.*` keys render in both pt-BR and English.
+`claimError` is the generic fallback the claim modal uses for 404 / 5xx / network failures (the Step 26 `t.errors.*` placeholder). It lives under `promotions.*` rather than `errors.*` so all promo copy stays in one section.
+
+**Test**: Frontend-only — no unit test. Verify manually: switch language, confirm all `promotions.*` keys render in both pt-BR and English, and that `creditAmount` correctly interpolates the amount.
 
 ---
 
@@ -1233,22 +1324,21 @@ Same structure as Step 22: checkpoint to verify everything works together.
 
 By this point, additionally passing:
 
-- `tests/db/migrations.test.ts` — now also includes `promo_university_email` unique constraint (Step 23)
-- `tests/db/promotions.test.ts` — `hasClaimedUniversityPromo`, `claimUniversityPromo` (Step 24)
-- `tests/unit/config.test.ts` — now also includes email suffix matching tests (Step 25)
+- `tests/db/migrations.test.ts` — now also includes `promotion_claims` unique constraint on `(user_id, promotion_id)` (Step 23)
+- `tests/db/promotions.test.ts` — `getUserPromotions`, `getUserPromotion`, `claimPromo` (Step 24)
 
 ### Automated integration test (`tests/integration/promo-subscribe-flow.test.ts` — needs DB)
 
 **Full flow: promotion + subscription**:
-- Create a user with `@unicamp.br` email and 0 balance. Call `claimUniversityPromo` — verify balance is now `UNIVERSITY_PROMO_CREDIT_CENTS` (2000). Run the subscribe logic with `useCredits: true` — since balance covers the full price, verify: user is `plan: 'pro'`, balance = 0, `createPixQrCode` was NOT called. This tests the promo-to-subscription pipeline end-to-end at the query layer.
+- Create a user with `@dac.unicamp.br` email and 0 balance. Call `claimPromo(userId, 'university-email', UNIVERSITY_PROMO_CREDIT_CENTS)` — verify balance is now 2000. Run the subscribe logic with `useCredits: true` — since balance covers the full price, verify: user is `plan: 'pro'`, balance = 0, `createPixQrCode` was NOT called. This tests the promo-to-subscription pipeline end-to-end at the query layer.
 
 **Double claim then subscribe**:
-- Create a user with `@unicamp.br`. Claim promo → balance = 2000. Attempt to claim again → verify it fails. Run subscribe with `useCredits: true` → verify user is pro and balance = 0. Confirms the unique constraint prevents double-crediting even in a multi-step flow.
+- Create a user with `@dac.unicamp.br`. Claim promo → balance = 2000. Attempt to claim again → verify it fails. Run subscribe with `useCredits: true` → verify user is pro and balance = 0. Confirms the unique constraint prevents double-crediting even in a multi-step flow.
 
 ### Manual full-flow tests
 
 1. **Eligible user claims promotion**:
-   - User with `@unicamp.br` → /subscription → sees promotion card → clicks → modal → claims → balance = R$20 → can now subscribe for free using credits.
+   - User with `@dac.unicamp.br` → /subscription → sees promotion card → clicks → modal → claims → balance = R$20 → can now subscribe for free using credits.
 
 2. **Full flow: promotion + subscription**:
    - Claim promo → get R$20 → subscribe → toggle "Use balance" → "Confirm subscription" → instant pro. Balance = R$0.

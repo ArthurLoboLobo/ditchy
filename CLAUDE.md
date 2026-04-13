@@ -95,7 +95,6 @@ db/
 - **Plan draft stack**: Plan edits create new `plan_drafts` rows. Undo deletes the newest draft, revealing the previous one. Drafts are cleaned up when the user starts studying.
 - **Usage tiers**: Each chat message call reads `daily_usage`, determines the usage phase (`best`/`degraded`/`blocked`), selects the appropriate model, then writes back the weighted token count. Free users hit `degraded` at 100k tokens/day and `blocked` at 200k; pro users degrade at 400k but are never hard-blocked.
 - **Subscription flow**: `POST /api/subscription/subscribe` creates a PIX QR code via AbacatePay and inserts a `pending` payment row. The `POST /api/webhooks/abacatepay` endpoint receives the `billing.paid` event, activates the pro plan, and marks the payment `paid`. The client polls `GET /api/subscription/payment-status` while displaying the QR code.
-- **University promo credits**: New users whose email matches a university suffix (configured in `src/config/subscription.ts`) receive a promo balance credit on first login (R$20.00 / 2000 cents).
 
 ### AI Models
 
