@@ -18,7 +18,8 @@ export async function cleanDatabase() {
   await sql`TRUNCATE
     messages, chat_summaries, chats, embeddings,
     subtopics, topics, plan_drafts, files,
-    daily_usage, payments, sections, otp_codes, users
+    daily_usage, payments, promotion_claims,
+    sections, otp_codes, users
     CASCADE`;
 }
 

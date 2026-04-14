@@ -126,3 +126,80 @@ describe('Migration 008: Subscription fields', () => {
     });
   });
 });
+
+describe('Migration 009: Promotion claims table', () => {
+  beforeEach(async () => {
+    await cleanDatabase();
+  });
+
+  it('should reject duplicate (user_id, promotion_id) via UNIQUE constraint', async () => {
+    const sql = getTestSql();
+    const user = await createTestUser();
+
+    await sql`
+      INSERT INTO promotion_claims (user_id, promotion_id)
+      VALUES (${user.id}, ${'university-email'})
+    `;
+
+    await expect(
+      sql`
+        INSERT INTO promotion_claims (user_id, promotion_id)
+        VALUES (${user.id}, ${'university-email'})
+      `
+    ).rejects.toThrow();
+  });
+
+  it('should allow the same user to claim multiple different promotions', async () => {
+    const sql = getTestSql();
+    const user = await createTestUser();
+
+    await sql`
+      INSERT INTO promotion_claims (user_id, promotion_id)
+      VALUES (${user.id}, ${'university-email'})
+    `;
+    await sql`
+      INSERT INTO promotion_claims (user_id, promotion_id)
+      VALUES (${user.id}, ${'launch-bonus'})
+    `;
+
+    const rows = await sql`
+      SELECT promotion_id FROM promotion_claims WHERE user_id = ${user.id}
+      ORDER BY promotion_id
+    `;
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.promotion_id)).toEqual(['launch-bonus', 'university-email']);
+  });
+
+  it('should allow different users to claim the same promotion', async () => {
+    const sql = getTestSql();
+    const userA = await createTestUser('a@example.com');
+    const userB = await createTestUser('b@example.com');
+
+    await sql`
+      INSERT INTO promotion_claims (user_id, promotion_id)
+      VALUES (${userA.id}, ${'university-email'})
+    `;
+    const rows = await sql`
+      INSERT INTO promotion_claims (user_id, promotion_id)
+      VALUES (${userB.id}, ${'university-email'})
+      RETURNING id
+    `;
+    expect(rows).toHaveLength(1);
+  });
+
+  it('should cascade delete claims when user is deleted', async () => {
+    const sql = getTestSql();
+    const user = await createTestUser();
+
+    await sql`
+      INSERT INTO promotion_claims (user_id, promotion_id)
+      VALUES (${user.id}, ${'university-email'})
+    `;
+    await sql`DELETE FROM users WHERE id = ${user.id}`;
+
+    const rows = await sql`
+      SELECT id FROM promotion_claims WHERE user_id = ${user.id}
+    `;
+    expect(rows).toHaveLength(0);
+  });
+});
