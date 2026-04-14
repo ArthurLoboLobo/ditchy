@@ -43,10 +43,7 @@ export default function Breadcrumb() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!sectionId || !chatId) {
-      setChats([]);
-      return;
-    }
+    if (!sectionId || !chatId) return;
     fetch(`/api/sections/${sectionId}/topics`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {

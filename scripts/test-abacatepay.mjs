@@ -76,7 +76,7 @@ async function main() {
 
   // Step 3: Simulate payment
   console.log('\n🔵 STEP 3: Simulate payment');
-  const simRes = await request('POST', `/v1/pixQrCode/simulate-payment?id=${pixId}`, {
+  await request('POST', `/v1/pixQrCode/simulate-payment?id=${pixId}`, {
     metadata: {},
   });
 
