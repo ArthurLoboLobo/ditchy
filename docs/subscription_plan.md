@@ -1113,7 +1113,7 @@ CREATE TABLE promotion_claims (
 
 One row per `(user, promotion)` pair. The `UNIQUE (user_id, promotion_id)` constraint prevents double claims of the same promotion, while still allowing a user to claim multiple different promotions. `promotion_id` is a free-form string that matches one of the ids in `PROMOTION_IDS` (Step 24) — no FK, since the list of known promotions lives in code.
 
-**Migration file**: `009_create_promotions.js`
+**Migration file**: `009_create_promotion_claims.js`
 
 **Test** (add to `tests/db/migrations.test.ts` — needs DB):
 
@@ -1147,7 +1147,7 @@ Functions:
 
 - `getUserPromotion(userId, promotionId)` — returns `UserPromotion | null`. This is where **all** per-promotion logic lives: a `switch (promotionId)` (or equivalent) with one branch per known id. Each branch fetches whatever it needs (the user row, the matching `promotion_claims` row, etc.) and returns `{ id, creditAmount, eligible, claimed }`. The default case returns `null` so unknown ids become 404s at the route layer. The `university-email` branch fetches the user, checks `UNIVERSITY_EMAIL_SUFFIXES.some((suffix) => user.email.toLowerCase().endsWith(suffix))` for `eligible`, looks up `promotion_claims` for `claimed`, and hardcodes `creditAmount: UNIVERSITY_PROMO_CREDIT_CENTS`. Emails are already normalized to lowercase at the auth boundary (`src/app/api/auth/send-code/route.ts`, `verify-code/route.ts`) and again in `findUserByEmail` / `createUser`, so the `.toLowerCase()` here is defensive — keep it anyway since `endsWith` is case-sensitive and the cost is zero.
 - `getUserPromotions(userId)` — loops over `PROMOTION_IDS` and calls `getUserPromotion(userId, id)` for each, filtering out any `null` results (there shouldn't be any in normal operation, since every id in `PROMOTION_IDS` should have a branch, but the filter keeps the return type clean). Returns `UserPromotion[]`. This function contains **no** per-promotion logic — adding a new promotion means adding its id to `PROMOTION_IDS` and its branch to `getUserPromotion`, nothing else.
-- `claimPromo(userId, promotionId, creditAmount)` — `Promise<void>`. Atomically inserts into `promotion_claims` and increments `users.balance` via `sql.transaction([...])` from `@/lib/db/connection` (same pattern as `src/app/api/webhooks/abacatepay/route.ts:43`). On a duplicate claim the Postgres unique-violation surfaces as a thrown `NeonDbError` with `code === '23505'`; re-throw unchanged so the API route can map it.
+- `claimPromo(userId, promo)` — `Promise<void>`. Takes the `UserPromotion` object produced by `getUserPromotion` — never a raw id or amount from the route. Reads `promo.id` and `promo.creditAmount` off that trusted value, then atomically inserts into `promotion_claims` and increments `users.balance` via `sql.transaction([...])` from `@/lib/db/connection` (same pattern as `src/app/api/webhooks/abacatepay/route.ts:43`). On a duplicate claim the Postgres unique-violation surfaces as a thrown `NeonDbError` with `code === '23505'`; re-throw unchanged so the API route can map it.
 
 **Test** (`tests/db/promotions.test.ts` — needs DB):
 
@@ -1155,16 +1155,17 @@ Functions:
 - Create a user with `@gmail.com` email and no claims — verify the returned list contains the `university-email` entry with `eligible: false`, `claimed: false`, `creditAmount: 2000`.
 - Create a user with `@dac.unicamp.br` email and no claims — verify the `university-email` entry has `eligible: true`, `claimed: false`.
 - Same user, then claim `university-email` — verify `eligible: true`, `claimed: true`.
-- Verify suffix matching: `@usp.br` user is eligible; `@unicamp.br.fake.com` user is not (suffix appears mid-string, not at the end); empty-email edge case is not eligible.
+- Verify suffix matching: `@usp.br` user is eligible; `@dac.unicamp.br.fake.com` user is not (suffix appears mid-string, not at the end); empty-email edge case is not eligible.
 
 `getUserPromotion`:
 - Returns the same shape as one entry from `getUserPromotions` for a known id.
 - Returns `null` for an unknown `promotionId` like `'does-not-exist'`.
 
 `claimPromo`:
-- Create a user with 0 balance. Call `claimPromo(userId, 'university-email', 2000)` (returns `void`). Query the user row — confirm `balance = 2000`. Query `promotion_claims` — confirm a row exists for `(userId, 'university-email')`.
-- Call `claimPromo(userId, 'university-email', 2000)` again — verify it throws (unique constraint). Query the user row — confirm `balance` is still 2000 (not double-credited, transaction rolled back).
-- Call `claimPromo(userId, 'launch-bonus', 500)` for the same user — verify it succeeds and balance becomes 2500 (different `promotion_id`, no conflict). Note: this exercises the table only — `'launch-bonus'` doesn't need to exist as a known promotion in the read functions for this test.
+- Create a `@dac.unicamp.br` user with 0 balance. Fetch `promo = await getUserPromotion(userId, 'university-email')`, then call `claimPromo(userId, promo!)` (returns `void`). Query the user row — confirm `balance = 2000`. Query `promotion_claims` — confirm a row exists for `(userId, 'university-email')`.
+- Call `claimPromo(userId, promo!)` again with the same `promo` — verify it throws (unique constraint). Query the user row — confirm `balance` is still 2000 (not double-credited, transaction rolled back).
+
+Note: there is no "unknown id" test for `claimPromo` because the signature doesn't allow one — unknown ids can't produce a `UserPromotion`, so they're rejected at the route layer before `claimPromo` is ever called. The unique-constraint coverage for cross-promotion independence lives in the Step 23 migration tests.
 
 ---
 
@@ -1197,7 +1198,7 @@ Logic:
 2. `const promo = await getUserPromotion(userId, params.id)` → if `null`, `return json({ error: 'NOT_FOUND' }, 404)`.
 3. If `!promo.eligible`, `return json({ error: 'NOT_ELIGIBLE' }, 400)`.
 4. If `promo.claimed`, `return json({ error: 'ALREADY_CLAIMED' }, 400)`.
-5. `claimPromo(userId, promo.id, promo.creditAmount)` inside a `try/catch`. On `NeonDbError` with `err.code === '23505'` (unique violation — concurrent claim between step 4 and here), `return json({ error: 'ALREADY_CLAIMED' }, 400)`; any other error falls through to the outer 500 handler. Import `NeonDbError` from `@neondatabase/serverless`.
+5. `claimPromo(userId, promo)` inside a `try/catch` — pass the `UserPromotion` from step 2 directly, so the id and credit amount come from the queries layer and not from `params.id` or the request body. On `NeonDbError` with `err.code === '23505'` (unique violation — concurrent claim between step 4 and here), `return json({ error: 'ALREADY_CLAIMED' }, 400)`; any other error falls through to the outer 500 handler. Import `NeonDbError` from `@neondatabase/serverless`.
 6. Return `{ success: true }`.
 
 **Test**: no dedicated test file — both routes are thin wrappers around `getUserPromotions`, `getUserPromotion`, and `claimPromo`, which are already covered by `tests/db/promotions.test.ts`. Verify manually: `@dac.unicamp.br` user claims `university-email` → balance +2000. Claim again → 400 `ALREADY_CLAIMED`. `@gmail.com` user → 400 `NOT_ELIGIBLE`. Unknown id → 404 `NOT_FOUND`. Unauthenticated → 401.
@@ -1225,7 +1226,7 @@ A new section is added **below** the existing balance display (so the flow reads
 
 - Section title from `t.promotions.title`.
 - If `promotions === null`: small inline spinner.
-- If `promotionsError`: a muted one-liner from `t.errors.*` (existing pattern), no retry button.
+- If `promotionsError`: a muted one-liner from `t.promotions.loadError`, no retry button.
 - Otherwise: a responsive grid of `Card` components, one per entry in `promotions`, in the order the API returned them. Each card shows:
   - Title and description resolved via a pure `camelCase(id)` transform: id `university-email` → `t.promotions.universityEmailTitle` and `t.promotions.universityEmailDescription`. No manual id → key mapping table — the transform is the mapping.
   - Credit amount formatted as `R$X.XX` by the page (reuse the `SUBSCRIPTION_PRICE_CENTS` formatter already in the file). The number is rendered directly; it is **not** baked into any translation string.
@@ -1308,10 +1309,11 @@ promotions: {
   alreadyClaimed: 'Você já resgatou esta promoção.' / 'You already claimed this promotion.',
   claimSuccess: 'Créditos adicionados ao seu saldo!' / 'Credits added to your balance!',
   claimError: 'Não foi possível resgatar a promoção. Tente novamente.' / 'Could not claim promotion. Please try again.',
+  loadError: 'Não foi possível carregar as promoções.' / 'Could not load promotions.',
 }
 ```
 
-`claimError` is the generic fallback the claim modal uses for 404 / 5xx / network failures (the Step 26 `t.errors.*` placeholder). It lives under `promotions.*` rather than `errors.*` so all promo copy stays in one section.
+`claimError` is the generic fallback the claim modal uses for 404 / 5xx / network failures; `loadError` is the inline message shown on the subscription page when `GET /api/promotions` fails. Both live under `promotions.*` rather than `errors.*` so all promo copy stays in one section.
 
 **Test**: Frontend-only — no unit test. Verify manually: switch language, confirm all `promotions.*` keys render in both pt-BR and English, and that `creditAmount` correctly interpolates the amount.
 
@@ -1331,7 +1333,7 @@ By this point, additionally passing:
 ### Automated integration test (`tests/integration/promo-subscribe-flow.test.ts` — needs DB)
 
 **Full flow: promotion + subscription**:
-- Create a user with `@dac.unicamp.br` email and 0 balance. Call `claimPromo(userId, 'university-email', UNIVERSITY_PROMO_CREDIT_CENTS)` — verify balance is now 2000. Run the subscribe logic with `useCredits: true` — since balance covers the full price, verify: user is `plan: 'pro'`, balance = 0, `createPixQrCode` was NOT called. This tests the promo-to-subscription pipeline end-to-end at the query layer.
+- Create a user with `@dac.unicamp.br` email and 0 balance. Fetch `promo = await getUserPromotion(userId, 'university-email')`, then call `claimPromo(userId, promo!)` — verify balance is now 2000. Run the subscribe logic with `useCredits: true` — since balance covers the full price, verify: user is `plan: 'pro'`, balance = 0, `createPixQrCode` was NOT called. This tests the promo-to-subscription pipeline end-to-end at the query layer.
 
 **Double claim then subscribe**:
 - Create a user with `@dac.unicamp.br`. Claim promo → balance = 2000. Attempt to claim again → verify it fails. Run subscribe with `useCredits: true` → verify user is pro and balance = 0. Confirms the unique constraint prevents double-crediting even in a multi-step flow.
