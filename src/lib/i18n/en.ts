@@ -21,6 +21,8 @@ const en: Translations = {
     back: 'Back',
     sending: 'Sending...',
     verifying: 'Verifying...',
+    bonusBadge: 'USP and Unicamp students get 1 month free!',
+    bonusDescription: 'Just log in with your university email and go to the subscription page to claim the offer.',
   },
   nav: {
     language: 'Language',
@@ -179,6 +181,21 @@ const en: Translations = {
     close: 'Close',
     paymentExpired: 'Payment expired',
     paymentFailed: 'Payment failed. Please try again.',
+    choosePlan: 'Choose your plan',
+    choosePlanSubtitle: 'Unlock the full power of AI for your studies.',
+    recommended: 'Recommended',
+    walletTitle: 'Wallet',
+    walletSubtitle: 'Use your balance to discount your subscription.',
+    featuresFree: [
+      'Standard AI model',
+      'Daily conversational limit',
+      'Hard block after limit is reached',
+    ],
+    featuresPro: [
+      'Best-in-class AI model',
+      'Uninterrupted study sessions',
+      'No daily blocks (unlimited base model usage)',
+    ],
   },
   promotions: {
     title: 'Bonuses',
@@ -194,6 +211,9 @@ const en: Translations = {
     claimSuccess: 'Credits added to your balance!',
     claimError: 'Could not claim bonus. Please try again.',
     loadError: 'Could not load bonuses.',
+    claimTooltipNavbar: 'You have a special bonus available! Click here to claim.',
+    claimTooltipCard: 'You have an exclusive bonus! Claim it here.',
+    claimTooltipSubscribe: 'You have enough balance to subscribe to Pro for free! Subscribe here.',
   },
 } as const;
 
