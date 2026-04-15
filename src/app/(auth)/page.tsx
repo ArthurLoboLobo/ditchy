@@ -188,8 +188,10 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* Right panel — Auth form */}
-        <div className="w-full max-w-md bg-surface/80 backdrop-blur-xl rounded-3xl border border-border-subtle p-8 shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
+        {/* Right panel */}
+        <div className="w-full max-w-md flex flex-col gap-6">
+          {/* Auth form */}
+          <div className="bg-surface/80 backdrop-blur-xl rounded-3xl border border-border-subtle p-8 shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
           {step === 'email' ? (
             <form onSubmit={handleSendCode} className="animate-fade-in-up">
               <label htmlFor="email" className="mb-2 block text-sm font-medium text-primary-text">
@@ -266,6 +268,23 @@ export default function AuthPage() {
               </div>
             </form>
           )}
+          </div>
+
+          {/* Bonus Banner */}
+          <div className="bg-accent-blue/5 border border-accent-blue/20 rounded-2xl p-5 text-center animate-fade-in-up md:px-6">
+            <div className="inline-flex items-center justify-center gap-2 mb-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-blue opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-blue"></span>
+              </span>
+              <h3 className="font-semibold text-accent-blue">
+                {t.auth.bonusBadge}
+              </h3>
+            </div>
+            <p className="text-sm text-muted-text font-medium leading-normal">
+              {t.auth.bonusDescription}
+            </p>
+          </div>
         </div>
       </section>
 

@@ -15,6 +15,8 @@ export interface Translations {
     back: string;
     sending: string;
     verifying: string;
+    bonusBadge: string;
+    bonusDescription: string;
   };
   nav: {
     language: string;
@@ -173,6 +175,13 @@ export interface Translations {
     close: string;
     paymentExpired: string;
     paymentFailed: string;
+    choosePlan: string;
+    choosePlanSubtitle: string;
+    recommended: string;
+    walletTitle: string;
+    walletSubtitle: string;
+    featuresFree: string[];
+    featuresPro: string[];
   };
   promotions: {
     title: string;
@@ -188,6 +197,9 @@ export interface Translations {
     claimSuccess: string;
     claimError: string;
     loadError: string;
+    claimTooltipNavbar: string;
+    claimTooltipCard: string;
+    claimTooltipSubscribe: string;
   };
 }
 
@@ -212,6 +224,8 @@ const ptBR: Translations = {
     back: 'Voltar',
     sending: 'Enviando...',
     verifying: 'Verificando...',
+    bonusBadge: 'Alunos da USP e Unicamp ganham 1 mês grátis!',
+    bonusDescription: 'Basta fazer login com seu e-mail universitário e acessar a página de assinatura para resgatar a oferta.',
   },
   nav: {
     language: 'Idioma',
@@ -370,6 +384,21 @@ const ptBR: Translations = {
     close: 'Fechar',
     paymentExpired: 'Pagamento expirado',
     paymentFailed: 'Falha no pagamento. Tente novamente.',
+    choosePlan: 'Escolha seu plano',
+    choosePlanSubtitle: 'Desbloqueie todo o poder da IA para seus estudos.',
+    recommended: 'Recomendado',
+    walletTitle: 'Carteira',
+    walletSubtitle: 'Use seu saldo para obter desconto na assinatura.',
+    featuresFree: [
+      'Modelo de IA padrão',
+      'Limite conversacional diário',
+      'Bloqueio de estudos após atingir o limite',
+    ],
+    featuresPro: [
+      'Melhor modelo de IA disponível',
+      'Estudo contínuo e sem interrupções',
+      'Sem bloqueio diário (uso ilimitado no modelo base)',
+    ],
   },
   promotions: {
     title: 'Bônus',
@@ -385,6 +414,9 @@ const ptBR: Translations = {
     claimSuccess: 'Créditos adicionados ao seu saldo!',
     claimError: 'Não foi possível resgatar o bônus. Tente novamente.',
     loadError: 'Não foi possível carregar os bônus.',
+    claimTooltipNavbar: 'Você tem um bônus especial disponível! Clique aqui para resgatar.',
+    claimTooltipCard: 'Você tem um bônus exclusivo! Resgate aqui.',
+    claimTooltipSubscribe: 'Você tem saldo suficiente para assinar o Pro de graça! Assine aqui.',
   },
 };
 
