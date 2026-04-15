@@ -4,8 +4,9 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.eduh.app"),
   title: "Eduh",
-  description: "AI-powered exam preparation platform",
+  description: "Estude menos. Estude melhor. Com IA.",
 };
 
 export default function RootLayout({
