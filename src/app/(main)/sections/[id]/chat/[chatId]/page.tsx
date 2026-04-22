@@ -123,7 +123,10 @@ export default function ChatPage() {
     if (!state) return;
 
     if (state === 'blocked') {
-      showToast(t.subscription.usageLimitFree, 'warning');
+      showToast(
+        <span>{t.subscription.usageLimitFree}{' '}<Link href="/subscription" className="underline hover:text-primary-text">{t.subscription.subscribeToPro}</Link></span>,
+        'error',
+      );
       return;
     }
 

@@ -5,8 +5,6 @@
 
 ### UX / Aesthetics
 - **Fix Enter on mobile**: Fix the Enter key on mobile devices so that it inserts a newline instead of sending.
-- **Make topic completion toggle more visible**: The button/toggle to mark a topic as complete is not noticeable enough. Users are not marking topics as complete because they can't see it.
-- **Correct daily limit message**: Correct the message when the free user reaches its daily limit. Currently it's like that: "Você já usou NaN% do seu limite diário restante."
 
 
 ### Chat / AI
