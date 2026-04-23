@@ -13,8 +13,6 @@
 
 
 ### Mobile
-- **Fix Enter on mobile**: Fix the Enter key on mobile devices so that it inserts a newline instead of sending.
-- **Fix how-it-works cards on mobile**: On mobile and small vertical screens, the cards explaining how the app works are not being displayed. Investigate and fix the layout so they render correctly at all screen sizes.
 - **Fix topic completion checkbox overlapping title**: On mobile, the checkbox used to mark a topic as completed in the study phase overlaps the topic title. Fix the layout so the checkbox and title are properly spaced and never collide.
 - **Fix breadcrumb dropdown overflow + add ellipsis truncation**: On mobile, the dropdown that appears when clicking the chat name in the breadcrumbs leaks off the right edge of the screen. Fix the dropdown positioning so it stays within the viewport. Also add `...` truncation to both the breadcrumb title and the dropdown items when the text is too long to fit.
 - **Fix long AI response lines causing horizontal overflow**: When the LLM produces a very long single line (e.g. a long code snippet or unbroken string), it renders without wrapping and forces the entire page to be wider than the viewport. Ensure the message container enforces `overflow-wrap: break-word` / `word-break: break-all` (or equivalent) so no single line can stretch the page layout.

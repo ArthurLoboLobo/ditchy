@@ -292,10 +292,10 @@ export default function AuthPage() {
       <section className="relative w-full max-w-5xl mx-auto px-6 py-24 lg:py-32 flex flex-col gap-24">
         
         {/* Step 1 */}
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.2s_forwards]">
-          <div className="lg:w-1/2 flex justify-center">
+        <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.2s_forwards]">
+          <div className="lg:w-1/2 flex justify-center w-full">
             {/* Flip Container */}
-            <div className="w-full group [perspective:1000px]">
+            <div className="w-full max-w-xs lg:max-w-none group [perspective:1000px]">
               <div className="relative w-full aspect-video rounded-3xl transition-all duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] shadow-xl">
                 
                 {/* Front */}
@@ -330,10 +330,10 @@ export default function AuthPage() {
         </div>
 
         {/* Step 2 */}
-        <div className="flex flex-col lg:flex-row-reverse items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.4s_forwards]">
-          <div className="lg:w-1/2 flex justify-center">
+        <div className="flex flex-col-reverse lg:flex-row-reverse items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.4s_forwards]">
+          <div className="lg:w-1/2 flex justify-center w-full">
             {/* Flip Container */}
-            <div className="w-full group [perspective:1000px]">
+            <div className="w-full max-w-xs lg:max-w-none group [perspective:1000px]">
               <div className="relative w-full aspect-video rounded-3xl transition-all duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] shadow-xl">
                 
                 {/* Front */}
@@ -368,10 +368,10 @@ export default function AuthPage() {
         </div>
 
         {/* Step 3 */}
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.6s_forwards]">
-          <div className="lg:w-1/2 flex justify-center">
+        <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-24 opacity-0 animate-[fade-in-up_0.6s_ease-out_0.6s_forwards]">
+          <div className="lg:w-1/2 flex justify-center w-full">
             {/* Flip Container */}
-            <div className="w-full group [perspective:1000px]">
+            <div className="w-full max-w-xs lg:max-w-none group [perspective:1000px]">
               <div className="relative w-full aspect-video rounded-3xl transition-all duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] shadow-xl">
                 
                 {/* Front */}
