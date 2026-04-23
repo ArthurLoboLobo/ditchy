@@ -31,8 +31,13 @@ function resizeTextarea(el: HTMLTextAreaElement) {
 const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
   function ChatComposer({ disabled, onSend, onHeightChange, placeholder }, ref) {
     const [inputValue, setInputValue] = useState('');
+    const [isCoarsePointer, setIsCoarsePointer] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      setIsCoarsePointer(window.matchMedia('(pointer: coarse)').matches);
+    }, []);
 
     useImperativeHandle(
       ref,
@@ -81,12 +86,12 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && !e.shiftKey && !isCoarsePointer) {
           e.preventDefault();
           handleSend();
         }
       },
-      [handleSend],
+      [handleSend, isCoarsePointer],
     );
 
     return (
