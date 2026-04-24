@@ -8,8 +8,7 @@
 - **Add title to "How it works" section**: The "How it works" section on the landing page is missing a visible title/heading. Add one to make the section clearer and easier to scan.
 - **Remove dashboard search bar**: The search bar on the dashboard is unnecessary since users have very few sections. Remove it to simplify the UI.
 - **Remove section descriptions**: Section descriptions serve no real purpose and add visual noise. Remove them from the UI and all related forms. _Note: requires a database migration to drop the `description` column from the sections table._
-- **Fix breadcrumb flash**: Breadcrumbs briefly show the raw ID instead of the section/chat name on initial load. Fix by either passing the name through the route state or showing a skeleton placeholder until the name is available.
-- **Fix plan-loading refresh message**: When the user refreshes the page while a study plan is still being generated, an incorrect or confusing message appears. Either prevent the issue (e.g. by persisting loading state and resuming gracefully) or show a clear, friendly message explaining that the plan generation was interrupted and they should try again.
+- **Fix breadcrumb flash**: Breadcrumbs briefly show the raw ID instead of the section/chat name on initial load. Fix by either passing the name through the route state or showing a skeleton placeholder until the name is available. 
 
 
 ### Mobile
@@ -23,6 +22,7 @@
   x
   $$
   instead of `$$ x $$`
+- **Fix duplicated AI message on first load refresh**: If the chat page is reloaded when it's first loading, the first AI message gets duplicated because it calls the GET endpoint where it generates the first AI message again.
 - **Concurrent messaging**: Let the user write messages while the AI is generating a response.
 - **Page refresh resilience**: Make it possible to refresh the page without interfering with the response.
 - **Improve embedding chunking**: Ensure the text chunking algorithm never splits a word into two separate chunks — always break at word boundaries.

@@ -39,6 +39,8 @@ export interface Translations {
       uploading: string;
       planning: string;
       studying: string;
+      'loading-planning': string;
+      'loading-studying': string;
     };
     createModal: {
       title: string;
@@ -53,6 +55,8 @@ export interface Translations {
   section: {
     notFound: string;
     loading: string;
+    loadingPlanning: string;
+    loadingStudying: string;
     uploadingPlaceholder: string;
     planningPlaceholder: string;
     studyingPlaceholder: string;
@@ -85,7 +89,6 @@ export interface Translations {
   planning: {
     loading: string;
     errorMessage: string;
-    errorInterrupted: string;
     retry: string;
     undo: string;
     regenerate: string;
@@ -250,6 +253,8 @@ const ptBR: Translations = {
       uploading: 'Enviando',
       planning: 'Planejando',
       studying: 'Estudando',
+      'loading-planning': 'Planejando',
+      'loading-studying': 'Preparando',
     },
     createModal: {
       title: 'Criar nova Seção',
@@ -264,6 +269,8 @@ const ptBR: Translations = {
   section: {
     notFound: 'Seção não encontrada.',
     loading: 'Carregando...',
+    loadingPlanning: 'Criando seu plano de estudos...',
+    loadingStudying: 'Preparando sua sessão de estudos...',
     uploadingPlaceholder: 'Envio de arquivos',
     planningPlaceholder: 'Planejamento de estudos',
     studyingPlaceholder: 'Estudando',
@@ -296,7 +303,6 @@ const ptBR: Translations = {
   planning: {
     loading: 'Criando seu plano de estudos...',
     errorMessage: 'Erro ao gerar o plano de estudos.',
-    errorInterrupted: 'A geração do plano foi interrompida. Volte ao painel e tente novamente.',
     retry: 'Tentar novamente',
     undo: 'Desfazer',
     regenerate: 'Refazer Plano',
