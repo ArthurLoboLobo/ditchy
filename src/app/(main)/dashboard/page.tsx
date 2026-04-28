@@ -144,9 +144,10 @@ export default function DashboardPage() {
 
       {/* Section grid or empty state */}
       {filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-primary-text text-sm">{t.dashboard.emptyTitle}</p>
-          <p className="text-muted-text text-sm mt-1">{t.dashboard.emptyDescription}</p>
+        <div className="text-center py-24">
+          <p className="font-title text-[1.25rem] text-page-cream">{t.dashboard.emptyTitle}</p>
+          <hr className="w-12 border-0 border-t border-hairline my-3 mx-auto" />
+          <p className="font-body text-[15px] text-page-cream-muted">{t.dashboard.emptyDescription}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -158,14 +159,14 @@ export default function DashboardPage() {
               className="flex flex-col gap-3"
             >
               {/* Header: name + delete */}
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm font-semibold text-primary-text truncate">{section.name}</h3>
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="font-title text-[1.25rem] leading-[1.3] text-page-cream truncate pt-0.5">{section.name}</h3>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setDeleteTarget(section);
                   }}
-                  className="shrink-0 text-muted-text hover:text-danger-red cursor-pointer p-0.5"
+                  className="shrink-0 text-page-cream-muted hover:text-rust-danger cursor-pointer p-0.5 transition-colors mt-1"
                   aria-label="Delete"
                 >
                   <TrashIcon />
@@ -174,12 +175,12 @@ export default function DashboardPage() {
 
               {/* Description */}
               {section.description && (
-                <p className="text-xs text-muted-text line-clamp-2">{section.description}</p>
+                <p className="font-body text-[14px] text-page-cream-muted line-clamp-2 mt-[-4px]">{section.description}</p>
               )}
 
               {/* Date + badge */}
-              <div className="flex items-center justify-between mt-auto">
-                <span className="text-xs text-muted-text">{formatDate(section.created_at)}</span>
+              <div className="flex items-center justify-between mt-auto pt-2">
+                <span className="font-body text-[13px] text-page-cream-faint">{formatDate(section.created_at)}</span>
                 <Badge variant={statusBadgeVariant[section.status] ?? 'muted'}>
                   {t.dashboard.status[section.status as keyof typeof t.dashboard.status] ?? section.status}
                 </Badge>
@@ -187,11 +188,11 @@ export default function DashboardPage() {
 
               {/* Progress (studying only) */}
               {section.status === 'studying' && section.total_topics > 0 && (
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2 mt-2">
                   <ProgressBar
                     value={(section.completed_topics / section.total_topics) * 100}
                   />
-                  <span className="text-xs text-muted-text">
+                  <span className="font-label text-[12px] text-page-cream-faint">
                     {section.completed_topics}/{section.total_topics} {t.dashboard.topicsCompleted}
                   </span>
                 </div>
@@ -221,7 +222,7 @@ export default function DashboardPage() {
             value={createDesc}
             onChange={(e) => setCreateDesc(e.target.value)}
           />
-          {createError && <p className="text-xs text-danger-red">{createError}</p>}
+          {createError && <p className="font-label text-[13px] text-rust-danger">{createError}</p>}
           <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
