@@ -440,7 +440,7 @@ function UploadIcon() {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
-      className="text-muted-text"
+      className="text-page-cream-muted"
     >
       <path
         d="M12 16V4m0 0l-4 4m4-4l4 4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"

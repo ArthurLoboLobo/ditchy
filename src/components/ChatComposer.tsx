@@ -36,6 +36,7 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsCoarsePointer(window.matchMedia('(pointer: coarse)').matches);
     }, []);
 

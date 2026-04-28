@@ -70,7 +70,7 @@ export default function ChatPage() {
       const errStr = error.message ?? '';
       if (errStr.includes('USAGE_LIMIT_REACHED')) {
         showToast(
-          <span>{t.subscription.usageLimitFree}{' '}<Link href="/subscription" className="underline hover:text-primary-text">{t.subscription.subscribeToPro}</Link></span>,
+          <span>{t.subscription.usageLimitFree}{' '}<Link href="/subscription" className="underline hover:text-page-cream">{t.subscription.subscribeToPro}</Link></span>,
           'error',
         );
       } else if (errStr.includes('RATE_LIMITED')) {
