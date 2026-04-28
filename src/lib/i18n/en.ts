@@ -45,6 +45,8 @@ const en: Translations = {
       uploading: 'Uploading',
       planning: 'Planning',
       studying: 'Studying',
+      'loading-planning': 'Planning',
+      'loading-studying': 'Preparing',
     },
     createModal: {
       title: 'Create new Section',
@@ -59,6 +61,8 @@ const en: Translations = {
   section: {
     notFound: 'Section not found.',
     loading: 'Loading...',
+    loadingPlanning: 'Creating your study plan...',
+    loadingStudying: 'Preparing your study session...',
     uploadingPlaceholder: 'File upload',
     planningPlaceholder: 'Study planning',
     studyingPlaceholder: 'Studying',
@@ -91,7 +95,6 @@ const en: Translations = {
   planning: {
     loading: 'Creating your study plan...',
     errorMessage: 'Failed to generate the study plan.',
-    errorInterrupted: 'Plan generation was interrupted. Go back to the dashboard and try again.',
     retry: 'Try again',
     undo: 'Undo',
     regenerate: 'Regenerate Plan',

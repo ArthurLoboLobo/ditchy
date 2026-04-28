@@ -35,11 +35,9 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
   const [plan, setPlan] = useState<PlanJSON | null>(null);
   const [mode, setMode] = useState<'loading' | 'error' | 'editor'>('loading');
   const [saving, setSaving] = useState(false);
-  const [startingStudy, setStartingStudy] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [showRegenerateInput, setShowRegenerateInput] = useState(false);
   const [guidanceText, setGuidanceText] = useState('');
-  const [errorSource, setErrorSource] = useState<'load' | 'regenerate'>('load');
 
   const draftCountRef = useRef(1);
   const canUndo = draftCountRef.current >= 2;
@@ -57,7 +55,6 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
       try {
         const res = await fetch(`/api/sections/${sectionId}/plan`);
         if (!res.ok) {
-          setErrorSource('load');
           setMode('error');
           return;
         }
@@ -66,11 +63,9 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
           setPlan(data.plan);
           setMode('editor');
         } else {
-          setErrorSource('load');
           setMode('error');
         }
       } catch {
-        setErrorSource('load');
         setMode('error');
       }
     }
@@ -137,14 +132,12 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
         body: JSON.stringify({ guidance: guidanceText }),
       });
       if (!res.ok) {
-        setErrorSource('regenerate');
         setMode('error');
         return;
       }
       // Fetch the new draft
       const getRes = await fetch(`/api/sections/${sectionId}/plan`);
       if (!getRes.ok) {
-        setErrorSource('regenerate');
         setMode('error');
         return;
       }
@@ -154,26 +147,21 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
       setGuidanceText('');
       setMode('editor');
     } catch {
-      setErrorSource('regenerate');
       setMode('error');
     }
   }
 
   async function handleStartStudying() {
-    setStartingStudy(true);
-    setSaving(true);
+    onStatusChange?.('loading-studying');
     try {
       const res = await fetch(`/api/sections/${sectionId}/start-studying`, {
         method: 'POST',
       });
-      if (res.ok) {
-        onStatusChange?.('studying');
-      }
+      if (!res.ok) throw new Error();
+      onStatusChange?.('studying');
     } catch {
-      // fail silently
-    } finally {
-      setStartingStudy(false);
-      setSaving(false);
+      // Server reverts to 'planning' on failure; match that client-side.
+      onStatusChange?.('planning');
     }
   }
 
@@ -291,16 +279,6 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  // --- Starting study loading state ---
-  if (startingStudy) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <Spinner size={28} />
-        <p className="text-sm text-muted-text">{t.studying.loading}</p>
-      </div>
-    );
-  }
-
   // --- Loading state ---
   if (mode === 'loading') {
     return (
@@ -315,15 +293,11 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
   if (mode === 'error') {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <p className="text-sm text-primary-text">
-          {errorSource === 'load' ? t.planning.errorInterrupted : t.planning.errorMessage}
-        </p>
-        {errorSource === 'regenerate' && (
-          <Button onClick={handleRegenerate}>
-            <RefreshIcon size={16} />
-            {t.planning.retry}
-          </Button>
-        )}
+        <p className="text-sm text-primary-text">{t.planning.errorMessage}</p>
+        <Button onClick={() => window.location.reload()}>
+          <RefreshIcon size={16} />
+          {t.planning.retry}
+        </Button>
       </div>
     );
   }
@@ -438,7 +412,7 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
 
       {/* Start studying */}
       <div className="mt-6 flex justify-end">
-        <Button disabled={saving} loading={saving} onClick={handleStartStudying}>
+        <Button disabled={saving} onClick={handleStartStudying}>
           {t.planning.startStudying}
         </Button>
       </div>

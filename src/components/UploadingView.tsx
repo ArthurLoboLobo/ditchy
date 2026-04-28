@@ -45,7 +45,6 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
 
   const [files, setFiles] = useState<LocalFile[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [startingPlan, setStartingPlan] = useState(false);
   const [previewFile, setPreviewFile] = useState<LocalFile | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LocalFile | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -106,7 +105,7 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
   const handleFilesSelected = useCallback(
     (fileList: FileList) => {
       Array.from(fileList).forEach(async (file) => {
-        const tempId = crypto.randomUUID();
+        const tempId = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
 
         setFiles((prev) => [
           ...prev,
@@ -224,15 +223,6 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
   const allProcessed =
     files.length > 0 && files.every((f) => f.status === 'processed');
 
-  if (startingPlan) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <Spinner size={28} />
-        <p className="text-sm text-muted-text">{t.planning.loading}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="animate-fade-in-up">
       {/* Upload drop zone */}
@@ -334,10 +324,9 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
       {/* Start Planning button */}
       <div className="mt-6 flex justify-end">
         <Button
-          disabled={!allProcessed || startingPlan}
-          loading={startingPlan}
+          disabled={!allProcessed}
           onClick={async () => {
-            setStartingPlan(true);
+            onStatusChange?.('loading-planning');
             try {
               const res = await fetch(`/api/sections/${sectionId}/start-planning`, {
                 method: 'POST',
@@ -345,9 +334,18 @@ export default function UploadingView({ sectionId, onStatusChange }: UploadingVi
               if (!res.ok) throw new Error();
               onStatusChange?.('planning');
             } catch {
+              try {
+                const r = await fetch(`/api/sections/${sectionId}`);
+                if (r.ok) {
+                  const data = await r.json();
+                  onStatusChange?.(data.section.status);
+                } else {
+                  onStatusChange?.('uploading');
+                }
+              } catch {
+                onStatusChange?.('uploading');
+              }
               showToast(t.errors.UNKNOWN);
-            } finally {
-              setStartingPlan(false);
             }
           }}
         >
