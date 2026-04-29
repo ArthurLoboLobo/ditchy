@@ -20,9 +20,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           className={`
             w-full px-[14px] py-[12px] rounded-[6px] font-body text-[15px]
             bg-desk-surface text-page-cream
-            border-none
+            border border-hairline
             placeholder:text-page-cream-faint
-            focus:outline-none focus:ring-[3px] focus:ring-oxblood-tint
+            focus:outline-none focus:input-focus-glow
             transition-all
             disabled:opacity-50 disabled:cursor-not-allowed
             ${error ? 'ring-[3px] ring-[rgba(182,90,54,0.25)]' : ''}

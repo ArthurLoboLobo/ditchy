@@ -100,7 +100,7 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
         ref={containerRef}
         className="fixed bottom-0 inset-x-0 px-4 flex justify-center pb-6 pt-12 bg-gradient-to-t from-lamp-night via-lamp-night/95 to-transparent pointer-events-none z-40"
       >
-        <div className="relative w-full max-w-3xl flex items-end bg-desk-surface border border-hairline rounded-[14px] p-2 pr-3 modal-lift focus-within:lamp-halo transition-all pointer-events-auto">
+        <div className="relative w-full max-w-3xl flex items-end bg-desk-surface border border-hairline rounded-[14px] p-2 pr-3 modal-lift focus-within:input-focus-glow transition-all pointer-events-auto">
           <textarea
             ref={textareaRef}
             value={inputValue}

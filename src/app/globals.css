@@ -164,6 +164,11 @@ body {
   }
 }
 
+@utility input-focus-glow {
+  border-color: rgba(157, 67, 55, 0.58);
+  box-shadow: 0 0 0 1px rgba(157, 67, 55, 0.28), 0 0 12px -8px rgba(157, 67, 55, 0.64);
+}
+
 @utility modal-lift {
   box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--hairline);
 }

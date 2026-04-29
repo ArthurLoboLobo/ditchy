@@ -384,7 +384,7 @@ export default function PlanningView({ sectionId, onStatusChange }: PlanningView
               value={guidanceText}
               onChange={(e) => setGuidanceText(e.target.value)}
               placeholder={t.planning.regenerateGuidancePlaceholder}
-              className="flex-1 px-4 py-3 rounded-[6px] font-body text-[14px] bg-desk-surface text-page-cream border border-hairline placeholder:text-page-cream-faint focus:outline-none focus:lamp-halo focus:border-oxblood-tint transition-all"
+              className="flex-1 px-4 py-3 rounded-[6px] font-body text-[14px] bg-desk-surface text-page-cream border border-hairline placeholder:text-page-cream-faint focus:outline-none focus:input-focus-glow transition-all"
               disabled={saving}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && guidanceText.trim()) handleRegenerate();

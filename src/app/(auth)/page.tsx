@@ -197,7 +197,7 @@ export default function AuthPage() {
         {/* Right panel */}
         <div className="w-full max-w-[380px] flex flex-col gap-6 relative z-10 lg:mt-8 hero-drift">
           {/* Auth form */}
-          <div className="bg-desk-surface rounded-[10px] p-8 focus-within:lamp-halo transition-all duration-500 relative">
+          <div className="bg-desk-surface rounded-[10px] p-8 transition-all duration-500 relative">
           {step === 'email' ? (
             <form onSubmit={handleSendCode} className="animate-fade-in-up relative z-10">
               <label htmlFor="email" className="mb-2 block font-label text-[13px] text-page-cream-muted">
@@ -210,7 +210,7 @@ export default function AuthPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t.auth.emailPlaceholder}
-                className="w-full rounded-[6px] bg-lamp-night px-[14px] py-[12px] font-body text-[15px] text-page-cream placeholder:text-page-cream-faint focus:ring-[3px] focus:ring-oxblood-tint focus:outline-none transition-shadow"
+                className="w-full rounded-[6px] border border-hairline bg-lamp-night px-[14px] py-[12px] font-body text-[15px] text-page-cream placeholder:text-page-cream-faint focus:input-focus-glow focus:outline-none transition-shadow"
               />
               {error && <p className="mt-3 text-[13px] text-rust-danger font-medium">{error}</p>}
               <button
@@ -237,7 +237,7 @@ export default function AuthPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                 placeholder={t.auth.codePlaceholder}
-                className="w-full rounded-[6px] bg-lamp-night px-[14px] py-[16px] text-center font-mono text-[16px] tracking-[0.5em] text-page-cream placeholder:text-page-cream-faint focus:ring-[3px] focus:ring-oxblood-tint focus:outline-none transition-shadow"
+                className="w-full rounded-[6px] border border-hairline bg-lamp-night px-[14px] py-[16px] text-center font-mono text-[16px] tracking-[0.5em] text-page-cream placeholder:text-page-cream-faint focus:input-focus-glow focus:outline-none transition-shadow"
               />
               {error && <p className="mt-3 text-[13px] text-rust-danger font-medium">{error}</p>}
               <button
