@@ -115,6 +115,7 @@ components:
     padding: "12px 14px"
   card:
     backgroundColor: "{colors.desk-surface}"
+    borderColor: "{colors.hairline}"
     textColor: "{colors.page-cream}"
     rounded: "{rounded.lg}"
     padding: "20px"
@@ -189,7 +190,7 @@ The palette is built from three materials of a university reading room: warm woo
 - **Page Cream** (`#ece5d6` / `oklch(0.93 0.012 80)`): Primary text. Warm off-white, the color of an old library book's pages. Never pure white.
 - **Page Cream Muted** (`#c4baa6` / `oklch(0.78 0.015 80)`): Secondary text. Descriptions, timestamps, placeholders.
 - **Page Cream Faint** (`#9a8f7e` / `oklch(0.62 0.01 80)`): Tertiary text. File metadata, captions, "topics completed" labels.
-- **Hairline** (`#ece5d629`, ~16% alpha cream): The structural rule line. Below section headings, between plan items, between chat messages and the input row. Never wraps a card.
+- **Hairline** (`#ece5d629`, ~16% alpha cream): The structural rule line. Below section headings, between plan items, between chat messages and the input row. Also used as the very soft full border on card surfaces that need clearer separation from the page.
 
 ### Tertiary (Status)
 - **Forest Success** (`#5e8c6f` / `oklch(0.62 0.09 150)`): Topic completion marks, progress fills, success toasts. Olive-leaning so it does not read as Gemini-pastel green.
@@ -264,7 +265,7 @@ The system is **flat by default**. Surfaces do not lift physically; they are sep
 ### Cards / Containers
 - **Corner Style:** `10px` (lg). No exception for "fancy" cards.
 - **Background:** `var(--desk-surface)`. No backdrop-blur. The room is already shadowed.
-- **Borders:** None at rest. A single hairline rule appears below the card's title, separating heading from body. Never wraps the card.
+- **Borders:** `1px solid var(--hairline)` at rest. The border should read as a soft edge, not a frame. A single internal hairline rule may appear below the card's title when the heading needs separation from the body.
 - **Shadow:** Flat at rest. Hover sets `background: var(--desk-surface-hover)`, no shadow, no lift. Active states use oxblood borders, state nodes, or low-opacity tints.
 - **Internal Padding:** `20px` default. `28px` for modal-class containers.
 

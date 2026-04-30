@@ -9,7 +9,7 @@ export default function Card({ children, clickable = false, className = '', ...p
   return (
     <div
       className={`
-        bg-desk-surface rounded-[10px] p-[20px] transition-colors duration-300
+        bg-desk-surface border border-hairline rounded-[10px] p-[20px] transition-colors duration-300
         ${clickable ? 'cursor-pointer hover:bg-desk-surface-hover' : ''}
         ${className}
       `}
