@@ -33,10 +33,10 @@ const en: Translations = {
     subscription: 'Subscription',
   },
   dashboard: {
-    searchPlaceholder: 'Search sections...',
-    createSection: 'Create new Section',
+    title: 'Your Sections',
+    createSection: 'New Section',
     emptyTitle: 'No sections created yet.',
-    emptyDescription: "Click 'Create new Section' to get started.",
+    emptyDescription: "Click 'New Section' to get started.",
     topicsCompleted: 'topics completed',
     deleteConfirmTitle: 'Delete section',
     deleteConfirmMessage: 'Are you sure you want to delete this section? This action cannot be undone.',

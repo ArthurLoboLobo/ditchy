@@ -27,7 +27,7 @@ export interface Translations {
     subscription: string;
   };
   dashboard: {
-    searchPlaceholder: string;
+    title: string;
     createSection: string;
     emptyTitle: string;
     emptyDescription: string;
@@ -242,10 +242,10 @@ const ptBR: Translations = {
     subscription: 'Assinatura',
   },
   dashboard: {
-    searchPlaceholder: 'Buscar seções...',
-    createSection: 'Criar nova Seção',
+    title: 'Suas Seções',
+    createSection: 'Nova Seção',
     emptyTitle: 'Nenhuma seção criada ainda.',
-    emptyDescription: "Clique em 'Criar nova Seção' para começar.",
+    emptyDescription: "Clique em 'Nova Seção' para começar.",
     topicsCompleted: 'tópicos concluídos',
     deleteConfirmTitle: 'Excluir seção',
     deleteConfirmMessage: 'Tem certeza que deseja excluir esta seção? Essa ação não pode ser desfeita.',
