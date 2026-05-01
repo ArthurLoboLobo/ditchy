@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import type { UIMessage } from 'ai';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -73,9 +74,16 @@ function ChatMessageItem({
       <div className="max-w-[95%] min-w-0 overflow-hidden font-body-prose text-[1.125rem] leading-[1.65] text-page-cream prose-chat">
         {textContent && (
           <ReactMarkdown
-            remarkPlugins={[remarkMath]}
+            remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}
             components={{
+              table({ children }) {
+                return (
+                  <div className="markdown-table-scroll">
+                    <table>{children}</table>
+                  </div>
+                );
+              },
               code({ className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '');
                 const codeString = String(children).replace(/\n$/, '');
