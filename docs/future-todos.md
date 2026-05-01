@@ -6,6 +6,7 @@
 ### UX / Aesthetics
 - **Remove section descriptions**: Section descriptions serve no real purpose and add visual noise. Remove them from the UI and all related forms. _Note: requires a database migration to drop the `description` column from the sections table._
 - **Fix breadcrumb flash**: Breadcrumbs briefly show the raw ID instead of the section/chat name on initial load. Fix by either passing the name through the route state or showing a skeleton placeholder until the name is available. 
+- **Use real links for navigation**: Ensure all clickable elements that navigate (e.g. sections in the dashboard, topics in the sidebar) use proper `<a>` tags (or Next.js `<Link>`) instead of just `onClick` handlers. This allows users to middle-click to open in a new tab, right-click for the context menu, or drag the link.
 
 
 ### Mobile
