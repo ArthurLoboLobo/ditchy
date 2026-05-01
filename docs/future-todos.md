@@ -4,9 +4,6 @@
 ## Actual TODOs
 
 ### UX / Aesthetics
-- **Improve warnings**: Review and improve the warning messages shown to users (e.g. usage limits, validation errors, subscription alerts) to be clearer, more actionable, and consistent in tone.
-- **Add title to "How it works" section**: The "How it works" section on the landing page is missing a visible title/heading. Add one to make the section clearer and easier to scan.
-- **Remove dashboard search bar**: The search bar on the dashboard is unnecessary since users have very few sections. Remove it to simplify the UI.
 - **Remove section descriptions**: Section descriptions serve no real purpose and add visual noise. Remove them from the UI and all related forms. _Note: requires a database migration to drop the `description` column from the sections table._
 - **Fix breadcrumb flash**: Breadcrumbs briefly show the raw ID instead of the section/chat name on initial load. Fix by either passing the name through the route state or showing a skeleton placeholder until the name is available. 
 

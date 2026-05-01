@@ -169,6 +169,21 @@
           "oklch(0.94 0.04 28)"
         ]
       },
+      "confirm-danger": {
+        "role": "tertiary",
+        "displayName": "Confirm Danger",
+        "canonical": "oklch(0.57 0.143 28)",
+        "tonalRamp": [
+          "oklch(0.22 0.07 28)",
+          "oklch(0.34 0.1 28)",
+          "oklch(0.46 0.13 28)",
+          "oklch(0.52 0.14 28)",
+          "oklch(0.57 0.143 28)",
+          "oklch(0.68 0.13 28)",
+          "oklch(0.8 0.09 28)",
+          "oklch(0.92 0.04 28)"
+        ]
+      },
       "brass-warning": {
         "role": "tertiary",
         "displayName": "Brass Warning",

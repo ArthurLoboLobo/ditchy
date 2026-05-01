@@ -13,6 +13,7 @@ colors:
   oxblood-tint: "#7e312820"
   forest-success: "#5e8c6f"
   rust-danger: "#cf5a52"
+  confirm-danger: "#bd5045"
   brass-warning: "#d6a85a"
   hairline: "#ece5d629"
   code-surface: "#262a2c"
@@ -99,7 +100,7 @@ components:
     rounded: "{rounded.md}"
     padding: "10px 20px"
   button-danger:
-    backgroundColor: "{colors.rust-danger}"
+    backgroundColor: "{colors.confirm-danger}"
     textColor: "{colors.page-cream}"
     typography: "{typography.label}"
     rounded: "{rounded.md}"
@@ -195,6 +196,7 @@ The palette is built from three materials of a university reading room: warm woo
 ### Tertiary (Status)
 - **Forest Success** (`#5e8c6f` / `oklch(0.62 0.09 150)`): Topic completion marks, progress fills, success toasts. Olive-leaning so it does not read as Gemini-pastel green.
 - **Rust Danger** (`#cf5a52` / `oklch(0.61 0.15 28)`): Delete affordances, error toasts, validation errors. Clear red signal, still warm enough to sit with the library palette and distinguishable from oxblood (hue 20).
+- **Confirm Danger** (`#bd5045` / `oklch(0.57 0.143 28)`): Destructive confirmation buttons. Slightly darker than rust-danger, with a clearer red signal.
 - **Brass Warning** (`#d6a85a` / `oklch(0.78 0.12 80)`): Usage warnings (75% / 90% caps), intermediate states. The lamp's brass fitting.
 - **Code Surface** (`#262a2c` / `oklch(0.22 0.005 240)`): Background for code blocks and KaTeX displays only. The single cool note in the room, by design, to mark "this is verbatim, not prose."
 
@@ -254,7 +256,7 @@ The system is **flat by default**. Surfaces do not lift physically; they are sep
 - **Primary (Oxblood):** `background: var(--oxblood)`, `color: var(--page-cream)`. The only chromatic button. Used once per page, on the dominant action ("Send code", "Start Planning", "Subscribe"). Hover shifts to `var(--oxblood-bright)`. Active applies a subtle inset shadow. No scale animation.
 - **Secondary (Ghost):** `background: transparent`, `color: var(--page-cream)`, `border: 1px solid var(--hairline)`. Used for "Cancel", "Back", "Logout", and low-priority actions. Hover: `background: var(--desk-surface-hover)`.
 - **Tertiary (Bare text):** `background: transparent`, `color: var(--page-cream-muted)`, no border. Used for inline navigation links and dropdown items. Hover: `color: var(--page-cream)`.
-- **Danger:** Same shape as Primary. `background: var(--rust-danger)`. Used only in confirmation modals where the action is destructive. Never in primary-button position on a page.
+- **Danger:** Same shape as Primary. `background: var(--confirm-danger)`. Used only in confirmation modals where the action is destructive. Never in primary-button position on a page.
 
 ### Inputs
 - **Style:** `background: var(--desk-surface)`, `border: 1px solid var(--hairline)`, `rounded: 6px`, padding `12px 14px`. Body typography (Inter 15px / 400). Placeholder color: `var(--page-cream-faint)`.

@@ -13,8 +13,8 @@
   --oxblood: #7e3128;
   --oxblood-bright: #9d4337;
   --oxblood-tint: #7e312820;
-  --confirm-danger: #a94138;
-  --confirm-danger-hover: #bd5045;
+  --confirm-danger: #bd5045;
+  --confirm-danger-hover: var(--rust-danger);
   --forest-success: #5e8c6f;
   --rust-danger: #cf5a52;
   --brass-warning: #d6a85a;
