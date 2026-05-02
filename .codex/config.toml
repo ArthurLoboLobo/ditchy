@@ -1,0 +1,4 @@
+[mcp_servers.stitch]
+command = "npx"
+args = ["@_davideast/stitch-mcp", "proxy"]
+env_vars = ["STITCH_API_KEY"]
