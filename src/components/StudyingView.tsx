@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import Card from '@/components/ui/Card';
 import ProgressBar from '@/components/ui/ProgressBar';
@@ -28,7 +28,6 @@ interface StudyingViewProps {
 export default function StudyingView({ sectionId }: StudyingViewProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const router = useRouter();
 
   const [topics, setTopics] = useState<TopicWithChatInfo[]>([]);
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
@@ -169,13 +168,12 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
                   <Card
                     clickable
                     className={`flex-1 relative overflow-hidden transition-all duration-300 ${
-                      topic.is_completed 
-                        ? 'opacity-70 hover:opacity-100 bg-desk-surface border border-hairline' 
+                      topic.is_completed
+                        ? 'opacity-70 hover:opacity-100 bg-desk-surface border border-hairline'
                         : isNextToStudy
                           ? 'bg-desk-surface ring-1 ring-oxblood hover:ring-2 hover:ring-oxblood shadow-md'
                           : 'bg-desk-surface border border-hairline hover:bg-desk-surface-hover hover:border-page-cream-faint'
                     }`}
-                    onClick={() => router.push(`/sections/${sectionId}/chat/${topic.chat_id}`)}
                     style={{ padding: '1.5rem' }}
                   >
                     <div className="flex items-start gap-4">
@@ -191,7 +189,12 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
                         <h3 className={`truncate font-title text-[1.25rem] mb-3 leading-snug transition-colors ${
                           topic.is_completed ? 'text-page-cream' : isNextToStudy ? 'text-oxblood' : 'text-page-cream'
                         }`}>
-                          {topic.title}
+                          <Link
+                            href={`/sections/${sectionId}/chat/${topic.chat_id}`}
+                            className="block truncate before:absolute before:inset-0 before:content-[''] before:rounded-[10px] focus-visible:outline-none focus-visible:before:ring-[3px] focus-visible:before:ring-oxblood-tint"
+                          >
+                            {topic.title}
+                          </Link>
                         </h3>
                         
                         {/* Subtopics List */}
@@ -219,11 +222,8 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
 
                       {/* Checkbox Action */}
                       <div
-                        className="absolute top-5 right-5 flex items-center gap-2 cursor-pointer transition-all duration-300 active:scale-95 rounded-full px-2.5 py-1.5 -mr-1 group-hover:bg-white/[0.06]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggle(topic.id);
-                        }}
+                        className="absolute top-5 right-5 z-[1] flex items-center gap-2 cursor-pointer transition-all duration-300 active:scale-95 rounded-full px-2.5 py-1.5 -mr-1 group-hover:bg-white/[0.06]"
+                        onClick={() => handleToggle(topic.id)}
                       >
                         <span className="font-label text-[12px] text-page-cream-muted transition-all duration-300 select-none opacity-0 group-hover:opacity-70 max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap">
                           {topic.is_completed ? t.studying.completed : t.studying.markComplete}
@@ -253,7 +253,6 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
                 <Card
                   clickable
                   className="flex-1 relative overflow-hidden transition-all duration-300 bg-desk-surface border border-hairline hover:bg-desk-surface-hover"
-                  onClick={() => router.push(`/sections/${sectionId}/chat/${revisionChatId}`)}
                   style={{ padding: '1.5rem' }}
                 >
                   <div className="flex items-start gap-4">
@@ -265,7 +264,12 @@ export default function StudyingView({ sectionId }: StudyingViewProps) {
                     <div className="flex-1 min-w-0">
                       {/* Title */}
                       <h3 className="font-title text-[1.25rem] mb-2 leading-snug transition-colors text-page-cream group-hover:text-oxblood">
-                        {t.studying.revision}
+                        <Link
+                          href={`/sections/${sectionId}/chat/${revisionChatId}`}
+                          className="block before:absolute before:inset-0 before:content-[''] before:rounded-[10px] focus-visible:outline-none focus-visible:before:ring-[3px] focus-visible:before:ring-oxblood-tint"
+                        >
+                          {t.studying.revision}
+                        </Link>
                       </h3>
                       
                       {/* Description */}
