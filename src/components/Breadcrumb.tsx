@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useParams, useRouter } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 
 interface Section {
@@ -19,7 +19,6 @@ export default function Breadcrumb() {
   const { t } = useTranslation();
   const pathname = usePathname();
   const params = useParams();
-  const router = useRouter();
 
   const [sectionOpen, setSectionOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -85,16 +84,6 @@ export default function Breadcrumb() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function handleSectionSelect(id: string) {
-    setSectionOpen(false);
-    router.push(`/sections/${id}`);
-  }
-
-  function handleChatSelect(id: string) {
-    setChatOpen(false);
-    router.push(`/sections/${sectionId}/chat/${id}`);
-  }
-
   return (
     <div className="fixed top-[56px] inset-x-0 z-30 h-[48px] bg-lamp-night border-b border-hairline flex items-center px-8">
       <nav className="flex items-center gap-2 font-label text-[13px]" aria-label="Breadcrumb">
@@ -141,15 +130,16 @@ export default function Breadcrumb() {
               {sectionOpen && sections.length > 0 && (
                 <div className="absolute left-0 top-8 min-w-56 max-w-[calc(100vw-2rem)] sm:max-w-sm bg-desk-surface border border-hairline rounded-[10px] p-1 shadow-2xl">
                   {sections.map((s) => (
-                    <button
+                    <Link
                       key={s.id}
-                      onClick={() => handleSectionSelect(s.id)}
-                      className={`w-full text-left px-3 py-2 font-label text-[13px] truncate cursor-pointer hover:bg-desk-surface-hover rounded-[6px] transition-colors ${
+                      href={`/sections/${s.id}`}
+                      onClick={() => setSectionOpen(false)}
+                      className={`block w-full text-left px-3 py-2 font-label text-[13px] truncate cursor-pointer hover:bg-desk-surface-hover rounded-[6px] transition-colors ${
                         s.id === sectionId ? 'text-oxblood-bright bg-oxblood-tint' : 'text-page-cream'
                       }`}
                     >
                       {s.name}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -177,15 +167,16 @@ export default function Breadcrumb() {
               {chatOpen && chats.length > 0 && (
                 <div className="absolute right-0 top-8 min-w-56 max-w-[calc(100vw-2rem)] sm:max-w-sm bg-desk-surface border border-hairline rounded-[10px] p-1 shadow-2xl">
                   {chats.map((c) => (
-                    <button
+                    <Link
                       key={c.id}
-                      onClick={() => handleChatSelect(c.id)}
-                      className={`w-full text-left px-3 py-2 font-label text-[13px] truncate cursor-pointer hover:bg-desk-surface-hover rounded-[6px] transition-colors ${
+                      href={`/sections/${sectionId}/chat/${c.id}`}
+                      onClick={() => setChatOpen(false)}
+                      className={`block w-full text-left px-3 py-2 font-label text-[13px] truncate cursor-pointer hover:bg-desk-surface-hover rounded-[6px] transition-colors ${
                         c.id === chatId ? 'text-oxblood-bright bg-oxblood-tint' : 'text-page-cream'
                       }`}
                     >
                       {c.name}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}
