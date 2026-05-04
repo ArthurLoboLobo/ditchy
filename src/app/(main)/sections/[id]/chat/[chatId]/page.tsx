@@ -304,7 +304,7 @@ export default function ChatPage() {
 
       <ChatComposer
         ref={composerRef}
-        disabled={isLoading}
+        sendDisabled={isLoading}
         onSend={handleSendMessage}
         onHeightChange={handleHeightChange}
         placeholder={t.chat.inputPlaceholder}

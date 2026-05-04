@@ -15,7 +15,7 @@ export type ChatComposerHandle = {
 };
 
 type ChatComposerProps = {
-  disabled: boolean;
+  sendDisabled: boolean;
   onSend: (text: string) => void;
   onHeightChange: (height: number) => void;
   placeholder: string;
@@ -31,7 +31,7 @@ function resizeTextarea(el: HTMLTextAreaElement) {
 }
 
 const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
-  function ChatComposer({ disabled, onSend, onHeightChange, placeholder }, ref) {
+  function ChatComposer({ sendDisabled, onSend, onHeightChange, placeholder }, ref) {
     const [inputValue, setInputValue] = useState('');
     const [isCoarsePointer, setIsCoarsePointer] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -79,14 +79,14 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
 
     const handleSend = useCallback(() => {
       const trimmed = inputValue.trim();
-      if (!trimmed || disabled) return;
+      if (!trimmed || sendDisabled) return;
       setInputValue('');
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
         textareaRef.current.style.overflowY = 'hidden';
       }
       onSend(trimmed);
-    }, [inputValue, disabled, onSend]);
+    }, [inputValue, sendDisabled, onSend]);
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -110,14 +110,13 @@ const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            disabled={disabled}
             rows={1}
-            className="flex-1 resize-none overflow-y-hidden bg-transparent px-4 mt-2 mb-2 font-body text-[15px] leading-relaxed text-page-cream placeholder:text-page-cream-faint focus:outline-none disabled:opacity-50"
+            className="flex-1 resize-none overflow-y-hidden bg-transparent px-4 mt-2 mb-2 font-body text-[15px] leading-relaxed text-page-cream placeholder:text-page-cream-faint focus:outline-none"
             style={{ maxHeight: '200px' }}
           />
           <button
             onClick={handleSend}
-            disabled={disabled || !inputValue.trim()}
+            disabled={sendDisabled || !inputValue.trim()}
             className="p-2.5 rounded-[6px] bg-oxblood hover:bg-oxblood-bright text-page-cream disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer mb-0.5 shrink-0 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
