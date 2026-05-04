@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { streamText, generateText, stepCountIs } from 'ai';
+import { streamText, generateText, stepCountIs, smoothStream } from 'ai';
 import { google } from '@ai-sdk/google';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { verifyChatOwnership, getChat } from '@/lib/db/queries/chats';
@@ -222,6 +222,10 @@ export async function POST(
       messages: llmMessages,
       tools: { searchStudentMaterials: createSearchStudentMaterialsTool(chat.section_id) },
       stopWhen: stepCountIs(3),
+      experimental_transform: smoothStream({
+        delayInMs: 20,
+        chunking: 'word',
+      }),
       async onFinish({ text, usage: streamUsage }) {
         insertAiCallLog({
           label: 'chat-stream',
