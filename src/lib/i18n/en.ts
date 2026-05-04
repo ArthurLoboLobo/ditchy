@@ -139,6 +139,8 @@ const en: Translations = {
     undoCancelButton: 'Cancel',
     undo: 'Undo',
     searchingMaterials: 'Searching your materials',
+    responseInterrupted: 'Response interrupted.',
+    tryAgain: 'Try again',
   },
   errors: {
     EMAIL_INVALID: 'Invalid email.',

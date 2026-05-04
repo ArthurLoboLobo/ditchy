@@ -13,6 +13,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import ChatComposer, { type ChatComposerHandle } from '@/components/ChatComposer';
 import ChatMessageItem from '@/components/ChatMessageItem';
+import ChatInterruptedRetry from '@/components/ChatInterruptedRetry';
 import { useUser } from '@/hooks/useUser';
 import { getWarningState, getWarningSeverity } from '@/lib/usage-warnings';
 import { USAGE_WARNING_THRESHOLDS } from '@/config/ai';
@@ -37,6 +38,7 @@ export default function ChatPage() {
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [undoTargetId, setUndoTargetId] = useState<string | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
 
   const { user: currentUser } = useUser();
@@ -249,6 +251,38 @@ export default function ChatPage() {
     }
   }, [chatId, messages, setMessages, showToast, t, undoTargetId]);
 
+  // Retry an orphan user message left behind by a mid-stream reload.
+  // Reuses the undo endpoint to delete the message and recover its text,
+  // then re-sends as a fresh request.
+  const handleRetry = useCallback(async (messageId: string) => {
+    if (isRetrying || isLoading) return;
+    setIsRetrying(true);
+    try {
+      const res = await fetch(`/api/chats/${chatId}/undo/${messageId}`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === 'CANNOT_UNDO_SUMMARIZED') {
+          showToast(t.chat.cannotUndoSummarized, 'info');
+        } else {
+          showToast(t.chat.streamError, 'error');
+        }
+        return;
+      }
+      const { content } = await res.json();
+      const msgIndex = messages.findIndex((m) => m.id === messageId);
+      if (msgIndex >= 0) setMessages(messages.slice(0, msgIndex));
+      sendMessage({ text: content });
+      requestAnimationFrame(() => {
+        const userMsgs = document.querySelectorAll<HTMLElement>('[data-role="user"]');
+        userMsgs[userMsgs.length - 1]?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    } catch {
+      showToast(t.chat.streamError, 'error');
+    } finally {
+      setIsRetrying(false);
+    }
+  }, [chatId, isLoading, isRetrying, messages, sendMessage, setMessages, showToast, t]);
+
   if (initialLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-5.5rem)]">
@@ -275,23 +309,43 @@ export default function ChatPage() {
       <div className="relative flex flex-col min-h-[calc(100vh-12rem)] w-full overflow-x-hidden animate-fade-in-up">
         {/* Messages */}
       <div className="flex-1 px-4 py-2 space-y-6 max-w-3xl mx-auto w-full">
-        {messages.map((message) => (
-          <ChatMessageItem
-            key={message.id}
-            message={message}
-            isHovered={hoveredMessageId === message.id}
-            canUndo={
-              message.role === 'user' &&
-              Number(message.id) > summarizedUpToMessageId &&
-              !isLoading
-            }
-            onHoverChange={setHoveredMessageId}
-            onRequestUndo={setUndoTargetId}
-            t={t}
-          />
-        ))}
+        {messages.map((message, idx) => {
+          const isLast = idx === messages.length - 1;
+          const numericId = Number(message.id);
+          const isOrphan =
+            isLast &&
+            message.role === 'user' &&
+            !isLoading &&
+            !isRetrying &&
+            !Number.isNaN(numericId) &&
+            numericId > summarizedUpToMessageId;
+          return (
+            <div key={message.id}>
+              <ChatMessageItem
+                message={message}
+                isHovered={hoveredMessageId === message.id}
+                canUndo={
+                  message.role === 'user' &&
+                  numericId > summarizedUpToMessageId &&
+                  !isLoading &&
+                  !isOrphan
+                }
+                onHoverChange={setHoveredMessageId}
+                onRequestUndo={setUndoTargetId}
+                t={t}
+              />
+              {isOrphan && (
+                <ChatInterruptedRetry
+                  retrying={isRetrying}
+                  onRetry={() => handleRetry(message.id)}
+                  t={t}
+                />
+              )}
+            </div>
+          );
+        })}
 
-        {isLoading && messages[messages.length - 1]?.role === 'user' && (
+        {(isLoading || isRetrying) && messages[messages.length - 1]?.role === 'user' && (
           <div className="flex justify-start">
             <Spinner size={18} />
           </div>

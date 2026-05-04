@@ -133,6 +133,8 @@ export interface Translations {
     undoCancelButton: string;
     undo: string;
     searchingMaterials: string;
+    responseInterrupted: string;
+    tryAgain: string;
   };
   errors: {
     EMAIL_INVALID: string;
@@ -346,6 +348,8 @@ const ptBR: Translations = {
     undoCancelButton: 'Cancelar',
     undo: 'Desfazer',
     searchingMaterials: 'Buscando nos seus materiais',
+    responseInterrupted: 'Resposta interrompida.',
+    tryAgain: 'Tentar novamente',
   },
   errors: {
     EMAIL_INVALID: 'E-mail inválido.',

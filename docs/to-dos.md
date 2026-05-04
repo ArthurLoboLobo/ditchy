@@ -18,7 +18,6 @@
   $$
   instead of `$$ x $$`
 - **Fix duplicated AI message on first load refresh**: If the chat page is reloaded when it's first loading, the first AI message gets duplicated because it calls the GET endpoint where it generates the first AI message again.
-- **Page refresh resilience**: Make it possible to refresh the page without interfering with the response.
 - **Improve embedding chunking**: Ensure the text chunking algorithm never splits a word into two separate chunks — always break at word boundaries.
 - **Smarter problem-aware retrieval**: Make the embedding and retrieval process more efficient by ensuring each problem is always placed in its own chunk(s). When a chunk belonging to a problem is retrieved via similarity search, return the entire problem (and its solution, if available) rather than just the matched chunk.
 - **Topic completion flow in chat**: When a topic is finished in a chat, make it easier for the user to mark the topic as completed and navigate to the next topic — e.g. a contextual prompt or inline action at the end of the conversation. Exact UX TBD.
