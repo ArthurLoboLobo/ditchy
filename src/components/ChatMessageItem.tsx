@@ -21,6 +21,35 @@ type ChatMessageItemProps = {
   t: Translations;
 };
 
+type StreamingMarkdownProps = {
+  content: string;
+};
+
+function StreamingMarkdown({ content }: StreamingMarkdownProps) {
+  return (
+    <ReactMarkdown
+      components={{
+        code({ children, ...props }) {
+          return (
+            <code className="bg-page-cream/[0.08] px-1.5 py-0.5 rounded-md font-body text-[0.7556em]" {...props}>
+              {children}
+            </code>
+          );
+        },
+        pre({ children }) {
+          return (
+            <pre className="my-4 overflow-x-auto rounded-md border border-hairline bg-code-surface p-4 font-mono text-[0.875rem] leading-relaxed">
+              {children}
+            </pre>
+          );
+        },
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
+
 function ChatMessageItem({
   message,
   isHovered,
@@ -38,7 +67,7 @@ function ChatMessageItem({
   const showToolIndicator = hasToolCall && !textContent;
 
   const renderedMarkdown = useMemo(() => {
-    if (!textContent) return null;
+    if (!textContent || isStreaming) return null;
     return (
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
@@ -77,7 +106,7 @@ function ChatMessageItem({
         {textContent.replace(/\$\$([\s\S]*?)\$\$/g, (_, content) => `\n$$\n${content.trim()}\n$$\n`)}
       </ReactMarkdown>
     );
-  }, [textContent]);
+  }, [textContent, isStreaming]);
 
   if (!textContent && !showToolIndicator) return null;
 
@@ -126,7 +155,7 @@ function ChatMessageItem({
       <div className="max-w-[95%] min-w-0 overflow-hidden font-body-prose text-[16px] leading-[1.65] text-page-cream prose-chat">
         {textContent && (
           isStreaming
-            ? <p className="whitespace-pre-wrap">{textContent}</p>
+            ? <StreamingMarkdown content={textContent} />
             : renderedMarkdown
         )}
         {showToolIndicator && (
