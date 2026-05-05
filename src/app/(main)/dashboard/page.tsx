@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 import Button from '@/components/ui/Button';
@@ -17,7 +18,6 @@ import { useToast } from '@/components/ui/Toast';
 interface Section {
   id: string;
   name: string;
-  description: string | null;
   status: string;
   created_at: string;
   total_topics: number;
@@ -41,7 +41,6 @@ export default function DashboardPage() {
   // Create modal state
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState('');
-  const [createDesc, setCreateDesc] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -74,7 +73,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/sections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: createName.trim(), description: createDesc.trim() || null }),
+        body: JSON.stringify({ name: createName.trim() }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -144,28 +143,26 @@ export default function DashboardPage() {
             <Card
               key={section.id}
               clickable
-              onClick={() => router.push(`/sections/${section.id}`)}
-              className="group flex flex-col gap-3"
+              className="group relative flex flex-col gap-3"
             >
               {/* Header: name + delete */}
               <div className="flex items-start justify-between gap-2 -mr-2">
-                <h3 className="font-title text-[1.25rem] leading-[1.3] text-page-cream truncate">{section.name}</h3>
+                <h3 className="font-title text-[1.25rem] leading-[1.3] text-page-cream truncate">
+                  <Link
+                    href={`/sections/${section.id}`}
+                    className="block truncate before:absolute before:inset-0 before:content-[''] before:rounded-[10px] focus-visible:outline-none focus-visible:before:ring-[3px] focus-visible:before:ring-oxblood-tint"
+                  >
+                    {section.name}
+                  </Link>
+                </h3>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteTarget(section);
-                  }}
-                  className="shrink-0 -mt-0.5 p-2 rounded-[6px] text-page-cream-muted hover:text-rust-danger cursor-pointer transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(pointer:coarse)]:opacity-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-oxblood-tint"
+                  onClick={() => setDeleteTarget(section)}
+                  className="relative z-[1] shrink-0 -mt-0.5 p-2 rounded-[6px] text-page-cream-muted hover:text-rust-danger cursor-pointer transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(pointer:coarse)]:opacity-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-oxblood-tint"
                   aria-label={t.dashboard.deleteConfirmTitle}
                 >
                   <TrashIcon />
                 </button>
               </div>
-
-              {/* Description */}
-              {section.description && (
-                <p className="font-body text-[14px] text-page-cream-muted line-clamp-2 mt-[-4px]">{section.description}</p>
-              )}
 
               {/* Date + badge */}
               <div className="flex items-center justify-between mt-auto pt-2">
@@ -204,12 +201,6 @@ export default function DashboardPage() {
             value={createName}
             onChange={(e) => setCreateName(e.target.value)}
             autoFocus
-          />
-          <Input
-            label={t.dashboard.createModal.descriptionLabel}
-            placeholder={t.dashboard.createModal.descriptionPlaceholder}
-            value={createDesc}
-            onChange={(e) => setCreateDesc(e.target.value)}
           />
           {createError && <p className="font-label text-[13px] text-rust-danger">{createError}</p>}
           <div className="flex justify-end gap-2">

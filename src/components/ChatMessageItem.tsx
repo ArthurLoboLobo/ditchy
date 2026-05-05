@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import type { UIMessage } from 'ai';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,15 +15,46 @@ type ChatMessageItemProps = {
   message: UIMessage;
   isHovered: boolean;
   canUndo: boolean;
+  isStreaming?: boolean;
   onHoverChange: (id: string | null) => void;
   onRequestUndo: (id: string) => void;
   t: Translations;
 };
 
+type StreamingMarkdownProps = {
+  content: string;
+};
+
+function StreamingMarkdown({ content }: StreamingMarkdownProps) {
+  return (
+    <ReactMarkdown
+      components={{
+        code({ children, ...props }) {
+          return (
+            <code className="bg-page-cream/[0.08] px-1.5 py-0.5 rounded-md font-body text-[0.7556em]" {...props}>
+              {children}
+            </code>
+          );
+        },
+        pre({ children }) {
+          return (
+            <pre className="my-4 overflow-x-auto rounded-md border border-hairline bg-code-surface p-4 font-mono text-[0.875rem] leading-relaxed">
+              {children}
+            </pre>
+          );
+        },
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
+
 function ChatMessageItem({
   message,
   isHovered,
   canUndo,
+  isStreaming = false,
   onHoverChange,
   onRequestUndo,
   t,
@@ -34,6 +65,48 @@ function ChatMessageItem({
     message.role === 'assistant' &&
     message.parts?.some((p) => typeof p.type === 'string' && p.type.startsWith('tool-'));
   const showToolIndicator = hasToolCall && !textContent;
+
+  const renderedMarkdown = useMemo(() => {
+    if (!textContent || isStreaming) return null;
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          table({ children }) {
+            return (
+              <div className="markdown-table-scroll">
+                <table>{children}</table>
+              </div>
+            );
+          },
+          code({ className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || '');
+            const codeString = String(children).replace(/\n$/, '');
+            if (match) {
+              return (
+                <SyntaxHighlighter
+                  style={oneDark}
+                  language={match[1]}
+                  PreTag="div"
+                  customStyle={{ borderRadius: '0.75rem', fontSize: '0.7222em', margin: '1rem 0', maxWidth: '100%', overflowX: 'auto' }}
+                >
+                  {codeString}
+                </SyntaxHighlighter>
+              );
+            }
+            return (
+              <code className="bg-page-cream/[0.08] px-1.5 py-0.5 rounded-md font-body text-[0.7556em]" {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      >
+        {textContent.replace(/\$\$([\s\S]*?)\$\$/g, (_, content) => `\n$$\n${content.trim()}\n$$\n`)}
+      </ReactMarkdown>
+    );
+  }, [textContent, isStreaming]);
 
   if (!textContent && !showToolIndicator) return null;
 
@@ -49,8 +122,16 @@ function ChatMessageItem({
           <div className="absolute top-0 -bottom-8 left-0 right-0 z-0" />
         )}
 
-        <div className="bg-desk-surface rounded-[14px] px-[20px] py-[14px] max-w-[85%] shadow-sm relative z-10">
-          <p className="font-body text-[15px] leading-relaxed text-page-cream whitespace-pre-wrap">{textContent}</p>
+        <div
+          data-user-message-bubble
+          className="bg-desk-surface rounded-[14px] px-[20px] py-[14px] max-w-[85%] shadow-sm relative z-10"
+        >
+          <p
+            data-user-message-body
+            className="font-body text-[14px] sm:text-[15px] leading-relaxed text-page-cream whitespace-pre-wrap"
+          >
+            {textContent}
+          </p>
         </div>
 
         {canUndo && isHovered && (
@@ -71,44 +152,11 @@ function ChatMessageItem({
 
   return (
     <div className="flex justify-start">
-      <div className="max-w-[95%] min-w-0 overflow-hidden font-body-prose text-[16px] leading-[1.65] text-page-cream prose-chat">
+      <div className="max-w-[95%] min-w-0 overflow-hidden font-body-prose text-[14px] sm:text-[16px] leading-[1.65] text-page-cream prose-chat">
         {textContent && (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={{
-              table({ children }) {
-                return (
-                  <div className="markdown-table-scroll">
-                    <table>{children}</table>
-                  </div>
-                );
-              },
-              code({ className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const codeString = String(children).replace(/\n$/, '');
-                if (match) {
-                  return (
-                    <SyntaxHighlighter
-                      style={oneDark}
-                      language={match[1]}
-                      PreTag="div"
-                      customStyle={{ borderRadius: '0.75rem', fontSize: '0.7222em', margin: '1rem 0', maxWidth: '100%', overflowX: 'auto' }}
-                    >
-                      {codeString}
-                    </SyntaxHighlighter>
-                  );
-                }
-                return (
-                  <code className="bg-[rgba(236,229,214,0.08)] px-1.5 py-0.5 rounded-md font-body text-[0.7556em]" {...props}>
-                    {children}
-                  </code>
-                );
-              },
-            }}
-          >
-            {textContent.replace(/\$\$([\s\S]*?)\$\$/g, (_, content) => `\n$$\n${content.trim()}\n$$\n`)}
-          </ReactMarkdown>
+          isStreaming
+            ? <StreamingMarkdown content={textContent} />
+            : renderedMarkdown
         )}
         {showToolIndicator && (
           <div className="flex items-center gap-2.5 text-page-cream-muted font-label text-[13px] mt-2 mb-1 animate-fade-in-up w-fit pl-1">

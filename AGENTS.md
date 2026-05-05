@@ -35,6 +35,8 @@ Eduh is an AI-powered exam preparation platform for university students. Users u
 
 ## Build, Test, and Development Commands
 
+Do not run `npm run dev` by default. Assume the user likely already has the Next.js dev server running, and only start it if the user explicitly asks.
+
 ```bash
 npm run dev             # Start the Next.js dev server
 npm run build           # Build for production
@@ -254,7 +256,7 @@ Custom colors are defined as CSS variables in `src/app/globals.css` and exposed 
 ## Design Constraints
 
 - **Dark mode only** — no light mode.
-- **No animations** — static UI only.
+- **No lots of animations** — mostly static UI.
 - **Flat design** with subtle hover effects and slightly rounded corners.
 - **i18n**: default `pt-BR`, secondary English. LLM language priority: last user message language > materials language > user preference.
 

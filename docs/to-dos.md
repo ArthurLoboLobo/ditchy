@@ -1,14 +1,9 @@
-# Future TODOs
+# TODOs
 
 
 ## Actual TODOs
 
 ### UX / Aesthetics
-- **Improve warnings**: Review and improve the warning messages shown to users (e.g. usage limits, validation errors, subscription alerts) to be clearer, more actionable, and consistent in tone.
-- **Add title to "How it works" section**: The "How it works" section on the landing page is missing a visible title/heading. Add one to make the section clearer and easier to scan.
-- **Remove dashboard search bar**: The search bar on the dashboard is unnecessary since users have very few sections. Remove it to simplify the UI.
-- **Remove section descriptions**: Section descriptions serve no real purpose and add visual noise. Remove them from the UI and all related forms. _Note: requires a database migration to drop the `description` column from the sections table._
-- **Fix breadcrumb flash**: Breadcrumbs briefly show the raw ID instead of the section/chat name on initial load. Fix by either passing the name through the route state or showing a skeleton placeholder until the name is available. 
 
 
 ### Mobile
@@ -22,15 +17,12 @@
   x
   $$
   instead of `$$ x $$`
-- **Fix duplicated AI message on first load refresh**: If the chat page is reloaded when it's first loading, the first AI message gets duplicated because it calls the GET endpoint where it generates the first AI message again.
-- **Concurrent messaging**: Let the user write messages while the AI is generating a response.
-- **Page refresh resilience**: Make it possible to refresh the page without interfering with the response.
 - **Improve embedding chunking**: Ensure the text chunking algorithm never splits a word into two separate chunks — always break at word boundaries.
 - **Smarter problem-aware retrieval**: Make the embedding and retrieval process more efficient by ensuring each problem is always placed in its own chunk(s). When a chunk belonging to a problem is retrieved via similarity search, return the entire problem (and its solution, if available) rather than just the matched chunk.
 - **Topic completion flow in chat**: When a topic is finished in a chat, make it easier for the user to mark the topic as completed and navigate to the next topic — e.g. a contextual prompt or inline action at the end of the conversation. Exact UX TBD.
 
+
 ### Subscription / Payments
-- **Pix payment loading state**: When the user clicks to pay with Pix in the payment modal, show a spinning/loading icon while the QR code is being generated, so the UI doesn't feel frozen.
 - **AbacatePay minimum PIX amount**: AbacatePay rejects PIX QR codes with `amount < 100` (R$1.00). If a user's balance leaves a PIX remainder below R$1.00 (e.g. balance = R$19.99), the subscribe endpoint returns `PAYMENT_CREATION_FAILED`. Needs to be handled gracefully.
 - **Auto-renewal**: Add an auto-renew toggle to the subscription page. When enabled, if the user has enough balance at expiration, debit and extend automatically. If not, downgrade and notify. Requires a cron job (e.g. Vercel Cron) to check expirations periodically. (Automatic Pix)
 - **Cron-based expiration handling**: Currently, plan expiration is checked on every API request. Add a cron job to proactively handle expirations (needed for auto-renewal and email notifications).
@@ -54,7 +46,6 @@
     - Number of topics and subtopics (very high, just to prevent spam)
     - Size of a message (very high, since since we will have a usage limit)
     - Size and number of tokens in the uploaded files (not very high, think of something reasonable)
-- **Email Alias Loophole**: Normalize emails by stripping "plus" aliases (e.g., `user+test@gmail.com` -> `user@gmail.com`). Currently, aliases create separate accounts, which allows users to bypass limits and claim promotions multiple times.
 
 
 
@@ -84,7 +75,7 @@ Additional issues identified through a codebase analysis that should be addresse
 - **Centralize environment variable validation**: Each file checks its own env vars at runtime independently. If `GOOGLE_GENERATIVE_AI_API_KEY` or `DATABASE_URL` is missing, the app starts successfully but crashes on first use. Create a `src/lib/env.ts` that validates all required vars at startup.
   - _Why it matters:_ Fail-fast validation catches misconfiguration immediately at deploy time rather than letting the app run in a broken state. This is especially important on Vercel where env vars are configured per-environment — a missing var in production that exists in development is a common mistake.
 
-- **Add input length validation on all API routes**: Section names, descriptions, chat messages, and plan regeneration guidance accept arbitrarily large strings. No max-length checks exist.
+- **Add input length validation on all API routes**: Section names, chat messages, and plan regeneration guidance accept arbitrarily large strings. No max-length checks exist.
   - _Why it matters:_ Unbounded input can cause multiple problems: database bloat (storing megabytes of text in a single field), excessive LLM costs (sending huge prompts to Gemini), and potential denial-of-service (a single request consuming disproportionate resources). Reasonable limits (e.g., 100 chars for names, 5000 for messages) prevent abuse while being invisible to normal users.
 
 - **Add error tracking/monitoring (e.g., Sentry)**: The only logging is `console.error`, which goes to Vercel's ephemeral function logs. There's no alerting, no error grouping, and no way to proactively know when things break.
@@ -123,4 +114,3 @@ Additional issues identified through a codebase analysis that should be addresse
 
 - **Paginate chat messages**: All messages are loaded at once. Long conversations will become slow.
   - _Why it matters:_ Loading hundreds of messages in a single query and sending them all to the client increases response time and memory usage on both sides. Pagination loads only the most recent messages and fetches older ones on demand (e.g., "scroll to load more").
-

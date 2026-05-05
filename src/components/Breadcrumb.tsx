@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useParams, useRouter } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 
 interface Section {
@@ -19,7 +19,6 @@ export default function Breadcrumb() {
   const { t } = useTranslation();
   const pathname = usePathname();
   const params = useParams();
-  const router = useRouter();
 
   const [sectionOpen, setSectionOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -68,6 +67,9 @@ export default function Breadcrumb() {
   const isOnSubscription = pathname === '/subscription';
   const isOnSection = !!sectionId;
   const isOnChat = !!chatId;
+  const canRenderSectionSegment = isOnSection && !!currentSection && (!isOnChat || !!currentChat);
+  const canRenderChatSegment = isOnChat && !!currentSection && !!currentChat;
+  const showPendingSegmentMarker = isOnSection && !canRenderSectionSegment;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -81,16 +83,6 @@ export default function Breadcrumb() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  function handleSectionSelect(id: string) {
-    setSectionOpen(false);
-    router.push(`/sections/${id}`);
-  }
-
-  function handleChatSelect(id: string) {
-    setChatOpen(false);
-    router.push(`/sections/${sectionId}/chat/${id}`);
-  }
 
   return (
     <div className="fixed top-[56px] inset-x-0 z-30 h-[48px] bg-lamp-night border-b border-hairline flex items-center px-8">
@@ -112,8 +104,12 @@ export default function Breadcrumb() {
           </>
         )}
 
+        {showPendingSegmentMarker && (
+          <span className="text-page-cream-faint select-none">›</span>
+        )}
+
         {/* Section segment */}
-        {isOnSection && (
+        {canRenderSectionSegment && (
           <>
             <span className="text-page-cream-faint select-none">›</span>
             <div className="relative" ref={sectionDropdownRef}>
@@ -127,22 +123,23 @@ export default function Breadcrumb() {
                 }`}
                 aria-expanded={sectionOpen}
               >
-                <span className="truncate">{currentSection?.name ?? sectionId}</span>
+                <span className="truncate">{currentSection.name}</span>
                 <ChevronDownIcon />
               </button>
 
               {sectionOpen && sections.length > 0 && (
                 <div className="absolute left-0 top-8 min-w-56 max-w-[calc(100vw-2rem)] sm:max-w-sm bg-desk-surface border border-hairline rounded-[10px] p-1 shadow-2xl">
                   {sections.map((s) => (
-                    <button
+                    <Link
                       key={s.id}
-                      onClick={() => handleSectionSelect(s.id)}
-                      className={`w-full text-left px-3 py-2 font-label text-[13px] truncate cursor-pointer hover:bg-desk-surface-hover rounded-[6px] transition-colors ${
+                      href={`/sections/${s.id}`}
+                      onClick={() => setSectionOpen(false)}
+                      className={`block w-full text-left px-3 py-2 font-label text-[13px] truncate cursor-pointer hover:bg-desk-surface-hover rounded-[6px] transition-colors ${
                         s.id === sectionId ? 'text-oxblood-bright bg-oxblood-tint' : 'text-page-cream'
                       }`}
                     >
                       {s.name}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -151,7 +148,7 @@ export default function Breadcrumb() {
         )}
 
         {/* Chat segment */}
-        {isOnChat && (
+        {canRenderChatSegment && (
           <>
             <span className="text-page-cream-faint select-none">›</span>
             <div className="relative" ref={chatDropdownRef}>
@@ -163,22 +160,23 @@ export default function Breadcrumb() {
                 className="flex items-center gap-1 min-w-0 max-w-[10rem] sm:max-w-xs text-page-cream hover:text-page-cream-muted transition-colors cursor-pointer"
                 aria-expanded={chatOpen}
               >
-                <span className="truncate">{currentChat?.name ?? chatId}</span>
+                <span className="truncate">{currentChat.name}</span>
                 <ChevronDownIcon />
               </button>
 
               {chatOpen && chats.length > 0 && (
                 <div className="absolute right-0 top-8 min-w-56 max-w-[calc(100vw-2rem)] sm:max-w-sm bg-desk-surface border border-hairline rounded-[10px] p-1 shadow-2xl">
                   {chats.map((c) => (
-                    <button
+                    <Link
                       key={c.id}
-                      onClick={() => handleChatSelect(c.id)}
-                      className={`w-full text-left px-3 py-2 font-label text-[13px] truncate cursor-pointer hover:bg-desk-surface-hover rounded-[6px] transition-colors ${
+                      href={`/sections/${sectionId}/chat/${c.id}`}
+                      onClick={() => setChatOpen(false)}
+                      className={`block w-full text-left px-3 py-2 font-label text-[13px] truncate cursor-pointer hover:bg-desk-surface-hover rounded-[6px] transition-colors ${
                         c.id === chatId ? 'text-oxblood-bright bg-oxblood-tint' : 'text-page-cream'
                       }`}
                     >
                       {c.name}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}
