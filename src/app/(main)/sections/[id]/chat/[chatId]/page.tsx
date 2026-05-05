@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useChat } from '@ai-sdk/react';
@@ -26,6 +26,71 @@ type DbMessage = {
   created_at: string;
 };
 
+const CHAT_FIXED_CHROME_HEIGHT = 56 + 48;
+const CHAT_TOP_READING_GAP = 12;
+const LONG_USER_VISIBLE_LINES = 3;
+const MIN_ASSISTANT_PREVIEW_HEIGHT = 120;
+const MIN_ASSISTANT_PREVIEW_HEIGHT_MOBILE = 88;
+const SCROLL_CUSHION_BUFFER = 2;
+
+function getLatestUserMessageElement() {
+  const userMessages = document.querySelectorAll<HTMLElement>('[data-role="user"]');
+  return userMessages[userMessages.length - 1] ?? null;
+}
+
+function getViewportHeight() {
+  return window.visualViewport?.height ?? window.innerHeight;
+}
+
+function getDocumentScrollHeight() {
+  return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+}
+
+function getMaxScrollY() {
+  return Math.max(0, getDocumentScrollHeight() - window.innerHeight);
+}
+
+function getComposerHeight(fallbackHeight: number) {
+  const composer = document.querySelector<HTMLElement>('[data-chat-composer]');
+  return composer?.getBoundingClientRect().height ?? fallbackHeight;
+}
+
+function getLineHeight(el: HTMLElement | null) {
+  if (!el) return 24;
+  const style = window.getComputedStyle(el);
+  const lineHeight = Number.parseFloat(style.lineHeight);
+  if (Number.isFinite(lineHeight)) return lineHeight;
+  const fontSize = Number.parseFloat(style.fontSize);
+  return Number.isFinite(fontSize) ? fontSize * 1.55 : 24;
+}
+
+function getSendScrollTarget(messageEl: HTMLElement, fallbackComposerHeight: number) {
+  const viewportHeight = getViewportHeight();
+  const topOffset = CHAT_FIXED_CHROME_HEIGHT + CHAT_TOP_READING_GAP;
+  const composerHeight = getComposerHeight(fallbackComposerHeight);
+  const minAssistantPreview =
+    viewportHeight < 720 ? MIN_ASSISTANT_PREVIEW_HEIGHT_MOBILE : MIN_ASSISTANT_PREVIEW_HEIGHT;
+  const bodyEl = messageEl.querySelector<HTMLElement>('[data-user-message-body]');
+  const bubbleEl = messageEl.querySelector<HTMLElement>('[data-user-message-bubble]') ?? messageEl;
+  const messageRect = messageEl.getBoundingClientRect();
+  const bubbleRect = bubbleEl.getBoundingClientRect();
+  const bubbleStyle = window.getComputedStyle(bubbleEl);
+  const lineHeight = getLineHeight(bodyEl);
+  const bubbleBottomPadding = Number.parseFloat(bubbleStyle.paddingBottom) || 0;
+  const visibleTailHeight = lineHeight * LONG_USER_VISIBLE_LINES + bubbleBottomPadding;
+  const availableUserHeight = Math.max(
+    visibleTailHeight,
+    viewportHeight - topOffset - composerHeight - minAssistantPreview,
+  );
+  const shouldAnchorTail =
+    bubbleRect.height > availableUserHeight && bubbleRect.height > visibleTailHeight;
+  const anchorViewportY = shouldAnchorTail
+    ? bubbleRect.bottom - visibleTailHeight
+    : messageRect.top;
+
+  return Math.max(0, window.scrollY + anchorViewportY - topOffset);
+}
+
 export default function ChatPage() {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -40,14 +105,18 @@ export default function ChatPage() {
   const [isUndoing, setIsUndoing] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
+  const [scrollCushionHeight, setScrollCushionHeight] = useState(0);
+  const [sendScrollVersion, setSendScrollVersion] = useState(0);
 
   const { user: currentUser } = useUser();
   const composerRef = useRef<ChatComposerHandle>(null);
+  const inputHeightRef = useRef(0);
   const initialMessagesRef = useRef<UIMessage[]>([]);
   const warningStateRef = useRef<string | null>(null);
   const lastFetchDataRef = useRef<{ phase: 'best' | 'degraded' | 'blocked'; usagePercent: number } | null>(null);
   const initialWarningShownRef = useRef(false);
   const userPlanRef = useRef<'free' | 'pro' | null>(null);
+  const pendingSendScrollRef = useRef<{ previousLastUserId: string | null } | null>(null);
 
   const {
     messages,
@@ -59,6 +128,9 @@ export default function ChatPage() {
     transport: new DefaultChatTransport({ api: `/api/chats/${chatId}/messages` }),
     messages: initialMessagesRef.current,
     onError(error) {
+      pendingSendScrollRef.current = null;
+      setScrollCushionHeight(0);
+
       // Bounce back: remove optimistic user message, restore to input
       let bouncedText = '';
       setMessages(prev => {
@@ -108,6 +180,9 @@ export default function ChatPage() {
         }
       } catch {
         // silent — IDs just won't be synced
+      } finally {
+        pendingSendScrollRef.current = null;
+        setScrollCushionHeight(0);
       }
     },
   });
@@ -208,17 +283,48 @@ export default function ChatPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialLoading, currentUser]);
 
-  const handleHeightChange = useCallback((h: number) => setInputHeight(h), []);
+  const handleHeightChange = useCallback((h: number) => {
+    inputHeightRef.current = h;
+    setInputHeight(h);
+  }, []);
+
+  const armSendScroll = useCallback(() => {
+    const previousLastUserId = [...messages].reverse().find((m) => m.role === 'user')?.id ?? null;
+    pendingSendScrollRef.current = { previousLastUserId };
+    setSendScrollVersion((version) => version + 1);
+  }, [messages]);
+
+  useLayoutEffect(() => {
+    const pendingScroll = pendingSendScrollRef.current;
+    if (!pendingScroll) return;
+
+    const latestUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+    if (!latestUserMessage || latestUserMessage.id === pendingScroll.previousLastUserId) return;
+
+    const latestUserEl = getLatestUserMessageElement();
+    if (!latestUserEl) return;
+
+    const targetY = getSendScrollTarget(latestUserEl, inputHeightRef.current);
+    const requiredCushion = Math.ceil(
+      Math.max(0, targetY - getMaxScrollY() + SCROLL_CUSHION_BUFFER),
+    );
+
+    if (requiredCushion > scrollCushionHeight + SCROLL_CUSHION_BUFFER) {
+      setScrollCushionHeight(requiredCushion);
+      return;
+    }
+
+    pendingSendScrollRef.current = null;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
+    });
+  }, [messages, scrollCushionHeight, sendScrollVersion]);
 
   // Send message (called by ChatComposer)
   const handleSendMessage = useCallback((text: string) => {
+    armSendScroll();
     sendMessage({ text });
-    // After the optimistic user message is committed, scroll it to the top of the page
-    requestAnimationFrame(() => {
-      const userMsgs = document.querySelectorAll<HTMLElement>('[data-role="user"]');
-      userMsgs[userMsgs.length - 1]?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    });
-  }, [sendMessage]);
+  }, [armSendScroll, sendMessage]);
 
   // Undo
   const handleUndo = useCallback(async () => {
@@ -271,17 +377,14 @@ export default function ChatPage() {
       const { content } = await res.json();
       const msgIndex = messages.findIndex((m) => m.id === messageId);
       if (msgIndex >= 0) setMessages(messages.slice(0, msgIndex));
+      armSendScroll();
       sendMessage({ text: content });
-      requestAnimationFrame(() => {
-        const userMsgs = document.querySelectorAll<HTMLElement>('[data-role="user"]');
-        userMsgs[userMsgs.length - 1]?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      });
     } catch {
       showToast(t.chat.streamError, 'error');
     } finally {
       setIsRetrying(false);
     }
-  }, [chatId, isLoading, isRetrying, messages, sendMessage, setMessages, showToast, t]);
+  }, [armSendScroll, chatId, isLoading, isRetrying, messages, sendMessage, setMessages, showToast, t]);
 
   if (initialLoading) {
     return (
@@ -358,6 +461,8 @@ export default function ChatPage() {
 
       {/* Spacer: reserves scroll room so messages can clear the fixed composer */}
       <div aria-hidden style={{ height: Math.max(inputHeight - 16, 0) }} />
+
+      <div aria-hidden style={{ height: scrollCushionHeight }} />
 
       <ChatComposer
         ref={composerRef}

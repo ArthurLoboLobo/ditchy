@@ -93,8 +93,16 @@ function ChatMessageItem({
           <div className="absolute top-0 -bottom-8 left-0 right-0 z-0" />
         )}
 
-        <div className="bg-desk-surface rounded-[14px] px-[20px] py-[14px] max-w-[85%] shadow-sm relative z-10">
-          <p className="font-body text-[15px] leading-relaxed text-page-cream whitespace-pre-wrap">{textContent}</p>
+        <div
+          data-user-message-bubble
+          className="bg-desk-surface rounded-[14px] px-[20px] py-[14px] max-w-[85%] shadow-sm relative z-10"
+        >
+          <p
+            data-user-message-body
+            className="font-body text-[15px] leading-relaxed text-page-cream whitespace-pre-wrap"
+          >
+            {textContent}
+          </p>
         </div>
 
         {canUndo && isHovered && (
