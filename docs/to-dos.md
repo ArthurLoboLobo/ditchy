@@ -23,7 +23,6 @@
 
 
 ### Subscription / Payments
-- **Pix payment loading state**: When the user clicks to pay with Pix in the payment modal, show a spinning/loading icon while the QR code is being generated, so the UI doesn't feel frozen.
 - **AbacatePay minimum PIX amount**: AbacatePay rejects PIX QR codes with `amount < 100` (R$1.00). If a user's balance leaves a PIX remainder below R$1.00 (e.g. balance = R$19.99), the subscribe endpoint returns `PAYMENT_CREATION_FAILED`. Needs to be handled gracefully.
 - **Auto-renewal**: Add an auto-renew toggle to the subscription page. When enabled, if the user has enough balance at expiration, debit and extend automatically. If not, downgrade and notify. Requires a cron job (e.g. Vercel Cron) to check expirations periodically. (Automatic Pix)
 - **Cron-based expiration handling**: Currently, plan expiration is checked on every API request. Add a cron job to proactively handle expirations (needed for auto-renewal and email notifications).
